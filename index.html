@@ -1,0 +1,1638 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Design Pattern Trainer · GoF</title>
+<!-- PWA: installabile su iOS tramite "Aggiungi a Home" -->
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#0f1117">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="GoF Trainer">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<style>
+  :root{
+    --bg:#0f1117; --bg2:#171a22; --card:#1d212b; --card2:#252a36;
+    --line:#2e3442; --txt:#e7e9ee; --muted:#9aa3b2;
+    --acc:#6ea8fe; --acc2:#8b7cff;
+    --green:#3fb950; --red:#f85149; --amber:#e3b341;
+    --crea:#5cc8ff; --strut:#9d7bff; --comp:#ff9e6e;
+    --radius:14px; --shadow:0 8px 30px rgba(0,0,0,.35);
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0}
+  body{
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    background:radial-gradient(1200px 700px at 80% -10%,#1c2433 0%,var(--bg) 55%);
+    color:var(--txt); min-height:100vh; line-height:1.5;
+  }
+  .wrap{max-width:920px;margin:0 auto;padding:28px 20px 80px}
+  header.top{display:flex;align-items:center;gap:14px;margin-bottom:6px}
+  header.top h1{font-size:1.5rem;margin:0;letter-spacing:.2px}
+  .badge{font-size:.7rem;background:var(--card2);border:1px solid var(--line);padding:3px 9px;border-radius:999px;color:var(--muted)}
+  .sub{color:var(--muted);margin:2px 0 22px;font-size:.95rem}
+
+  .card{background:linear-gradient(180deg,var(--card),#191d26);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow)}
+  .pad{padding:22px}
+
+  /* HOME */
+  .modes{display:grid;grid-template-columns:repeat(2,1fr);gap:14px;margin-bottom:18px}
+  .mode{cursor:pointer;text-align:left;border:1px solid var(--line);background:var(--card);border-radius:var(--radius);padding:18px;transition:.15s;color:var(--txt)}
+  .mode:hover{transform:translateY(-2px);border-color:var(--acc);background:var(--card2)}
+  .mode .ico{font-size:1.6rem}
+  .mode h3{margin:8px 0 4px;font-size:1.05rem}
+  .mode p{margin:0;color:var(--muted);font-size:.85rem}
+  .opts{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-top:6px}
+  .chip{cursor:pointer;user-select:none;font-size:.82rem;padding:7px 13px;border-radius:999px;border:1px solid var(--line);background:var(--card);color:var(--muted);transition:.12s}
+  .chip.on{color:#fff;border-color:transparent}
+  .chip.on[data-cat="all"]{background:linear-gradient(90deg,var(--acc),var(--acc2))}
+  .chip.on[data-cat="creazionali"]{background:var(--crea);color:#0b1622}
+  .chip.on[data-cat="strutturali"]{background:var(--strut)}
+  .chip.on[data-cat="comportamentali"]{background:var(--comp);color:#241006}
+
+  .legend{display:flex;gap:16px;flex-wrap:wrap;margin-top:14px;font-size:.8rem;color:var(--muted)}
+  .dot{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:6px;vertical-align:middle}
+
+  /* QUIZ */
+  .hud{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;gap:12px;flex-wrap:wrap}
+  .hud .left{display:flex;gap:10px;align-items:center}
+  .pill{font-size:.8rem;background:var(--card2);border:1px solid var(--line);padding:6px 12px;border-radius:999px}
+  .pill b{color:var(--acc)}
+  .streak{color:var(--amber)}
+  .progress{height:6px;background:var(--card2);border-radius:999px;overflow:hidden;margin-bottom:18px}
+  .progress > i{display:block;height:100%;width:0;background:linear-gradient(90deg,var(--acc),var(--acc2));transition:width .3s}
+
+  .qtag{display:inline-block;font-size:.72rem;text-transform:uppercase;letter-spacing:.6px;color:var(--muted);margin-bottom:10px}
+  .qtext{font-size:1.12rem;font-weight:600;margin:0 0 6px}
+  .qctx{color:var(--muted);margin:0 0 18px;font-size:.95rem}
+  .qctx em{color:var(--txt);font-style:normal}
+
+  .answers{display:grid;gap:10px}
+  .answer{cursor:pointer;text-align:left;border:1px solid var(--line);background:var(--card2);color:var(--txt);border-radius:11px;padding:13px 15px;font-size:.95rem;transition:.12s;display:flex;align-items:center;gap:10px}
+  .answer:hover:not(.locked){border-color:var(--acc)}
+  .answer .k{width:24px;height:24px;flex:0 0 24px;border-radius:6px;background:var(--card);display:grid;place-items:center;font-size:.78rem;color:var(--muted);border:1px solid var(--line)}
+  .answer.correct{border-color:var(--green);background:rgba(63,185,80,.14)}
+  .answer.wrong{border-color:var(--red);background:rgba(248,81,73,.13)}
+  .answer.locked{cursor:default}
+
+  .feedback{margin-top:16px;border-radius:11px;padding:14px 16px;font-size:.9rem;display:none}
+  .feedback.show{display:block}
+  .feedback.ok{background:rgba(63,185,80,.1);border:1px solid rgba(63,185,80,.4)}
+  .feedback.no{background:rgba(248,81,73,.1);border:1px solid rgba(248,81,73,.4)}
+  .feedback h4{margin:0 0 6px}
+  .feedback .rel{color:var(--muted);margin-top:8px;font-size:.85rem}
+
+  .row{display:flex;gap:10px;justify-content:flex-end;margin-top:18px;flex-wrap:wrap}
+  button.btn{cursor:pointer;border:1px solid var(--line);background:var(--card2);color:var(--txt);padding:11px 20px;border-radius:10px;font-size:.92rem;transition:.12s}
+  button.btn:hover{border-color:var(--acc)}
+  button.btn.primary{background:linear-gradient(90deg,var(--acc),var(--acc2));border:none;color:#0b1018;font-weight:600}
+  button.btn.ghost{background:transparent}
+
+  /* DRAW MODE */
+  .umlbox{border:1px solid var(--line);border-radius:12px;padding:18px;background:#12151c}
+  .umlgrid{display:flex;flex-wrap:wrap;gap:16px}
+  .uml{background:var(--card);border:1px solid var(--line);border-radius:8px;min-width:170px;flex:1 1 200px;overflow:hidden}
+  .uml .name{padding:9px 12px;font-weight:700;font-size:.9rem;border-bottom:1px solid var(--line);background:var(--card2)}
+  .uml .name small{display:block;font-weight:400;color:var(--muted);font-size:.7rem}
+  .uml .mem{padding:8px 12px;font-family:ui-monospace,Menlo,Consolas,monospace;font-size:.78rem;color:#c8d2e0}
+  .uml .mem div{padding:1px 0}
+  .rels{margin-top:14px;font-size:.85rem;color:var(--muted)}
+  .rels b{color:var(--txt)}
+  .selfrate{display:flex;gap:10px;justify-content:center;margin-top:18px;flex-wrap:wrap}
+  .hidden{display:none}
+  .answer.sel{border-color:var(--acc);background:rgba(110,168,254,.16)}
+  .answer .check{margin-left:auto;color:var(--acc);font-weight:700;opacity:0}
+  .answer.sel .check{opacity:1}
+  .selcount{font-size:.82rem;color:var(--muted);margin:10px 2px}
+  .pairhead{display:flex;align-items:center;gap:10px;font-size:1.15rem;font-weight:700;margin:2px 0 4px}
+  .pairhead .vs{color:var(--amber);font-size:.85rem;font-weight:600}
+  .cmpcat{font-size:.72rem;color:var(--muted);font-weight:400}
+  .umltitle{font-size:.82rem;text-transform:uppercase;letter-spacing:.5px;color:var(--acc);margin:16px 0 6px}
+  .checklist{list-style:none;padding:0;margin:10px 0 0}
+  .checklist li{padding:4px 0 4px 24px;position:relative;color:var(--muted);font-size:.9rem}
+  .checklist li:before{content:"☐";position:absolute;left:0;color:var(--acc)}
+  .prosbox{display:flex;gap:14px;flex-wrap:wrap;margin-top:12px}
+  .prosbox > div{flex:1 1 180px;background:#12151c;border:1px solid var(--line);border-radius:10px;padding:10px 14px}
+  .prosbox h5{margin:0 0 6px;font-size:.82rem}
+  .prosbox ul{margin:0;padding-left:18px;font-size:.84rem;color:#c8d2e0}
+  .pro h5{color:var(--green)} .con h5{color:var(--red)}
+  .diffbox{background:rgba(227,179,65,.08);border:1px solid rgba(227,179,65,.35);border-radius:11px;padding:14px 16px;font-size:.92rem;margin-top:14px}
+
+  /* RESULT */
+  .result{text-align:center;padding:34px 22px}
+  .result .big{font-size:3rem;font-weight:800;margin:6px 0}
+  .result .grade{font-size:1.1rem;color:var(--muted);margin-bottom:20px}
+  .bars{text-align:left;max-width:460px;margin:0 auto 22px}
+  .barrow{margin:9px 0}
+  .barrow .lbl{display:flex;justify-content:space-between;font-size:.82rem;margin-bottom:4px}
+  .bar{height:8px;border-radius:999px;background:var(--card2);overflow:hidden}
+  .bar > i{display:block;height:100%;background:linear-gradient(90deg,var(--acc),var(--acc2))}
+
+  a.foot{color:var(--muted);font-size:.78rem;text-decoration:none}
+  .center{text-align:center}
+  @media(max-width:600px){.modes{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <h1>🃏 Design Pattern Trainer</h1>
+    <span class="badge">Gang of Four · 22 pattern</span>
+  </header>
+  <p class="sub">Allenati a <b>riconoscere</b>, <b>applicare</b> e <b>disegnare</b> i pattern GoF.</p>
+
+  <!-- ===== HOME ===== -->
+  <div id="home">
+    <div class="card pad" style="margin-bottom:18px">
+      <div style="font-size:.85rem;color:var(--muted);margin-bottom:10px">Filtra per categoria</div>
+      <div class="opts" id="catChips">
+        <span class="chip on" data-cat="all">Tutti</span>
+        <span class="chip" data-cat="creazionali">Creazionali</span>
+        <span class="chip" data-cat="strutturali">Strutturali</span>
+        <span class="chip" data-cat="comportamentali">Comportamentali</span>
+      </div>
+      <div class="legend">
+        <span><i class="dot" style="background:var(--crea)"></i>Creazionali (5)</span>
+        <span><i class="dot" style="background:var(--strut)"></i>Strutturali (7)</span>
+        <span><i class="dot" style="background:var(--comp)"></i>Comportamentali (10)</span>
+      </div>
+    </div>
+
+    <div class="modes">
+      <button class="mode" data-mode="recognize">
+        <div class="ico">🔍</div><h3>Riconosci</h3>
+        <p>Dal problema o dall'esempio, indovina di quale pattern si tratta.</p>
+      </button>
+      <button class="mode" data-mode="apply">
+        <div class="ico">🎯</div><h3>Applica</h3>
+        <p>Scenario reale: scegli il pattern giusto da usare nel contesto.</p>
+      </button>
+      <button class="mode" data-mode="draw">
+        <div class="ico">✏️</div><h3>Disegna</h3>
+        <p>Flashcard di struttura UML: disegna su carta, poi confronta e autovalùtati.</p>
+      </button>
+      <button class="mode" data-mode="explain">
+        <div class="ico">🗣️</div><h3>Spiega</h3>
+        <p>Pattern casuale: spiegalo a voce, disegnalo, descrivi classi e metodi. Poi confronta.</p>
+      </button>
+      <button class="mode" data-mode="compare">
+        <div class="ico">⚖️</div><h3>Confronta</h3>
+        <p>Due pattern simili a confronto: trova le differenze e rappresenta entrambi.</p>
+      </button>
+      <button class="mode" data-mode="apply2">
+        <div class="ico">🎯🎯</div><h3>Applica ×2</h3>
+        <p>Scenario reale che richiede <b>due</b> pattern insieme: individuali entrambi.</p>
+      </button>
+      <button class="mode" data-mode="mixed">
+        <div class="ico">🎲</div><h3>Sfida mista</h3>
+        <p>Tutto insieme: riconoscere, applicare e ricostruire le strutture.</p>
+      </button>
+    </div>
+    <p class="center" style="color:var(--muted);font-size:.82rem">Ogni sessione = 10 domande. Buono studio!</p>
+  </div>
+
+  <!-- ===== QUIZ ===== -->
+  <div id="quiz" class="hidden">
+    <div class="hud">
+      <div class="left">
+        <span class="pill">Domanda <b id="qnum">1</b>/<span id="qtot">10</span></span>
+        <span class="pill">Punti <b id="score">0</b></span>
+        <span class="pill streak" id="streakPill">🔥 <b id="streak">0</b></span>
+      </div>
+      <button class="btn ghost" id="quitBtn">✕ Esci</button>
+    </div>
+    <div class="progress"><i id="pbar"></i></div>
+    <div class="card pad" id="qcard"></div>
+  </div>
+
+  <!-- ===== RESULT ===== -->
+  <div id="result" class="hidden">
+    <div class="card result">
+      <div style="font-size:.85rem;color:var(--muted);text-transform:uppercase;letter-spacing:1px">Sessione completata</div>
+      <div class="big" id="finalScore">0</div>
+      <div class="grade" id="grade"></div>
+      <div class="bars" id="bars"></div>
+      <div class="row" style="justify-content:center">
+        <button class="btn" id="againBtn">↺ Rigioca</button>
+        <button class="btn primary" id="homeBtn">⌂ Menu</button>
+      </div>
+    </div>
+  </div>
+
+  <p class="center" style="margin-top:26px"><span class="foot">Basato su «Design Patterns: Elements of Reusable OO Software» (GoF, 1994)</span></p>
+</div>
+
+<script>
+/* =========================================================
+   DATI: 22 pattern GoF estratti dagli appunti
+   ========================================================= */
+const P = [
+/* ---------- CREAZIONALI ---------- */
+{n:"Factory Method", c:"creazionali",
+ prob:"Una classe non può anticipare il tipo di oggetti che deve creare e vuole delegare la creazione alle sottoclassi.",
+ ex:"Un'app di logistica che gestisce solo camion, ma poi deve supportare anche spedizioni marittime.",
+ uml:[
+   {nm:"Creator",mem:["+ factoryMethod(): Product","+ someOperation()"]},
+   {nm:"ConcreteCreator",mem:["+ factoryMethod(): Product"]},
+   {nm:"Product", st:"interface", mem:["+ operation()"]},
+   {nm:"ConcreteProduct",mem:["+ operation()"]},
+ ],
+ rel:"Spesso evolve verso Abstract Factory, Builder o Prototype. È un caso speciale di Template Method."},
+
+{n:"Abstract Factory", c:"creazionali",
+ prob:"Creare famiglie di oggetti correlati senza specificare le loro classi concrete.",
+ ex:"Un sistema di arredamento che produce sedie, divani e tavolini in stili coordinati (moderno, vittoriano).",
+ uml:[
+   {nm:"AbstractFactory",st:"interface",mem:["+ createProductA(): A","+ createProductB(): B"]},
+   {nm:"ConcreteFactory1",mem:["+ createProductA(): A1","+ createProductB(): B1"]},
+   {nm:"AbstractProductA",st:"interface",mem:[]},
+   {nm:"ProductA1 / ProductB1",mem:["// famiglia coerente"]},
+ ],
+ rel:"Spesso implementato con Factory Method. Alternativa a Facade per nascondere sottosistemi. Può usare Bridge."},
+
+{n:"Builder", c:"creazionali",
+ prob:"Creare oggetti complessi passo dopo passo, separando la costruzione dalla rappresentazione.",
+ ex:"Costruire una casa con diverse opzioni: mura, porte, finestre, piscina.",
+ uml:[
+   {nm:"Director",mem:["- builder: Builder","+ construct()"]},
+   {nm:"Builder",st:"interface",mem:["+ buildPartA()","+ buildPartB()","+ getResult()"]},
+   {nm:"ConcreteBuilder",mem:["- product: Product","+ buildPartA()","+ getResult(): Product"]},
+   {nm:"Product",mem:[]},
+ ],
+ rel:"Abstract Factory restituisce prodotti subito, Builder permette passi aggiuntivi. Utile per costruire alberi Composite."},
+
+{n:"Prototype", c:"creazionali",
+ prob:"Creare copie di oggetti esistenti senza rendere il codice dipendente dalle loro classi concrete.",
+ ex:"Clonare forme geometriche (cerchi, rettangoli) senza conoscerne i dettagli concreti.",
+ uml:[
+   {nm:"Prototype",st:"interface",mem:["+ clone(): Prototype"]},
+   {nm:"ConcretePrototype1",mem:["- field1","+ clone(): Prototype"]},
+   {nm:"Client",mem:["+ operation(p: Prototype)"]},
+ ],
+ rel:"Usato con Abstract Factory e Builder. Alternativa a Factory Method quando l'inizializzazione è costosa."},
+
+{n:"Singleton", c:"creazionali",
+ prob:"Assicurare che una classe abbia una sola istanza e fornire un punto di accesso globale a essa.",
+ ex:"Una connessione al database condivisa in tutta l'applicazione.",
+ uml:[
+   {nm:"Singleton",mem:["- static instance: Singleton","- Singleton()  «costruttore privato»","+ static getInstance(): Singleton","+ businessMethod()"]},
+ ],
+ rel:"Facade spesso diventa Singleton. Flyweight è simile ma con più istanze immutabili."},
+
+/* ---------- STRUTTURALI ---------- */
+{n:"Adapter", c:"strutturali",
+ prob:"Far collaborare classi con interfacce incompatibili.",
+ ex:"Adattare un'API che restituisce XML a un sistema che si aspetta JSON.",
+ uml:[
+   {nm:"Client",mem:["+ request()"]},
+   {nm:"Target",st:"interface",mem:["+ request()"]},
+   {nm:"Adapter",mem:["- adaptee: Adaptee","+ request()"]},
+   {nm:"Adaptee",mem:["+ specificRequest()"]},
+ ],
+ rel:"Bridge è progettato a priori, Adapter integra codice esistente. Decorator estende il comportamento, Adapter cambia l'interfaccia."},
+
+{n:"Bridge", c:"strutturali",
+ prob:"Separare un'astrazione dalla sua implementazione per poterle cambiare indipendentemente.",
+ ex:"Disaccoppiare una GUI (astrazione) dalle API del sistema operativo (implementazione).",
+ uml:[
+   {nm:"Abstraction",mem:["- impl: Implementation","+ feature()"]},
+   {nm:"RefinedAbstraction",mem:["+ feature()"]},
+   {nm:"Implementation",st:"interface",mem:["+ method1()","+ method2()"]},
+   {nm:"ConcreteImplementationA",mem:["+ method1()","+ method2()"]},
+ ],
+ rel:"Spesso usato con Abstract Factory. Può essere confuso con Strategy o Adapter."},
+
+{n:"Composite", c:"strutturali",
+ prob:"Comporre oggetti in strutture ad albero e trattare singoli oggetti e composizioni in modo uniforme.",
+ ex:"Un sistema di grafica che gestisce sia forme semplici (cerchi) sia gruppi di forme.",
+ uml:[
+   {nm:"Component",st:"interface",mem:["+ operation()","+ add(Component)","+ remove(Component)","+ getChild(int)"]},
+   {nm:"Leaf",mem:["+ operation()"]},
+   {nm:"Composite",mem:["- children: List<Component>","+ operation()","+ add(Component)"]},
+ ],
+ rel:"Spesso usato con Iterator e Visitor. Builder può costruirne gli alberi, Decorator estenderne i componenti."},
+
+{n:"Decorator", c:"strutturali",
+ prob:"Aggiungere responsabilità a oggetti in modo dinamico e flessibile, senza usare l'ereditarietà.",
+ ex:"Aggiungere cifratura e compressione a un flusso di dati.",
+ uml:[
+   {nm:"Component",st:"interface",mem:["+ operation()"]},
+   {nm:"ConcreteComponent",mem:["+ operation()"]},
+   {nm:"Decorator",mem:["- wrappee: Component","+ operation()"]},
+   {nm:"ConcreteDecoratorA",mem:["+ operation()","+ addedBehavior()"]},
+ ],
+ rel:"Adapter cambia l'interfaccia, Decorator la estende. Strategy cambia l'algoritmo, Decorator aggiunge funzionalità."},
+
+{n:"Facade", c:"strutturali",
+ prob:"Fornire un'interfaccia semplice a un sottosistema complesso.",
+ ex:"Una classe che semplifica l'uso di una libreria di conversione video.",
+ uml:[
+   {nm:"Facade",mem:["- subsystem1: Subsystem1","- subsystem2: Subsystem2","+ simpleMethod()"]},
+   {nm:"Subsystem1",mem:["+ operation1()"]},
+   {nm:"Subsystem2",mem:["+ operation2()"]},
+   {nm:"Client",mem:[]},
+ ],
+ rel:"Abstract Factory può nascondere la creazione come Facade. Mediator è simile ma coordina oggetti. Spesso è un Singleton."},
+
+{n:"Flyweight", c:"strutturali",
+ prob:"Ridurre l'uso di memoria condividendo parti comuni di stato tra molti oggetti.",
+ ex:"Renderizzare milioni di particelle in un gioco condividendo testura e colore.",
+ uml:[
+   {nm:"FlyweightFactory",mem:["- flyweights: Map<String,Flyweight>","+ getFlyweight(key)"]},
+   {nm:"Flyweight",st:"interface",mem:["+ operation(extrinsicState)"]},
+   {nm:"ConcreteFlyweight",mem:["- intrinsicState","+ operation(extrinsicState)"]},
+   {nm:"Client",mem:["- extrinsicState"]},
+ ],
+ rel:"Spesso usato con Composite per foglie condivise. Singleton ha una sola istanza, Flyweight molte."},
+
+{n:"Proxy", c:"strutturali",
+ prob:"Controllare l'accesso a un oggetto, aggiungendo logica prima o dopo la chiamata.",
+ ex:"Caching, logging o lazy initialization di oggetti pesanti.",
+ uml:[
+   {nm:"Subject",st:"interface",mem:["+ request()"]},
+   {nm:"RealSubject",mem:["+ request()"]},
+   {nm:"Proxy",mem:["- realSubject: RealSubject","+ request()"]},
+   {nm:"Client",mem:["+ request()"]},
+ ],
+ rel:"Decorator aggiunge comportamento, Proxy controlla l'accesso. Adapter cambia interfaccia, Proxy la mantiene."},
+
+/* ---------- COMPORTAMENTALI ---------- */
+{n:"Chain of Responsibility", c:"comportamentali",
+ prob:"Passare una richiesta lungo una catena di handler finché uno non la gestisce.",
+ ex:"Sistema di autenticazione e validazione di una richiesta web.",
+ uml:[
+   {nm:"Handler",st:"interface",mem:["+ handle(request)","+ setNext(handler)"]},
+   {nm:"ConcreteHandler1",mem:["+ handle(request)"]},
+   {nm:"ConcreteHandler2",mem:["+ handle(request)"]},
+   {nm:"Client",mem:[]},
+ ],
+ rel:"Spesso usato con Composite. Simile a Decorator nella struttura ma diverso nell'intento. Può usare Command."},
+
+{n:"Command", c:"comportamentali",
+ prob:"Incapsulare una richiesta come oggetto, per parametrizzare, accodare, loggare o annullare operazioni.",
+ ex:"Sistema di undo/redo in un editor di testo.",
+ uml:[
+   {nm:"Invoker",mem:["- command: Command","+ executeCommand()"]},
+   {nm:"Command",st:"interface",mem:["+ execute()","+ undo()"]},
+   {nm:"ConcreteCommand",mem:["- receiver: Receiver","+ execute()","+ undo()"]},
+   {nm:"Receiver",mem:["+ action()"]},
+ ],
+ rel:"Usato con Memento per salvare lo stato. Strategy cambia algoritmi, Command incapsula richieste. Prototype può clonare comandi."},
+
+{n:"Iterator", c:"comportamentali",
+ prob:"Permettere di attraversare una collezione senza esporne la struttura interna.",
+ ex:"Iterare su una lista, un albero o un grafo in modo uniforme.",
+ uml:[
+   {nm:"Iterator",st:"interface",mem:["+ next()","+ hasNext()"]},
+   {nm:"ConcreteIterator",mem:["- collection: ConcreteCollection","+ next()","+ hasNext()"]},
+   {nm:"Collection",st:"interface",mem:["+ createIterator(): Iterator"]},
+   {nm:"ConcreteCollection",mem:["+ createIterator(): Iterator"]},
+ ],
+ rel:"Spesso usato con Composite. Può essere implementato con Factory Method nella collezione."},
+
+{n:"Mediator", c:"comportamentali",
+ prob:"Ridurre le dipendenze caotiche tra oggetti, centralizzando la comunicazione in un mediatore.",
+ ex:"Gestire l'interazione tra componenti GUI (bottoni, campi, liste).",
+ uml:[
+   {nm:"Mediator",st:"interface",mem:["+ notify(sender, event)"]},
+   {nm:"ConcreteMediator",mem:["- component1","- component2","+ notify(sender, event)"]},
+   {nm:"Component1",mem:["- mediator: Mediator","+ doA()"]},
+   {nm:"Component2",mem:["- mediator: Mediator","+ doC()"]},
+ ],
+ rel:"Observer distribuisce eventi, Mediator li centralizza. Facade semplifica l'interfaccia, Mediator coordina oggetti."},
+
+{n:"Memento", c:"comportamentali",
+ prob:"Salvare e ripristinare lo stato di un oggetto senza violarne l'incapsulamento.",
+ ex:"Sistema di undo in un editor di testo.",
+ uml:[
+   {nm:"Originator",mem:["- state","+ createMemento(): Memento","+ restore(m: Memento)"]},
+   {nm:"Memento",mem:["- state","+ getState()"]},
+   {nm:"Caretaker",mem:["- mementos: List<Memento>","+ backup()","+ undo()"]},
+ ],
+ rel:"Spesso usato con Command per undo/redo. Prototype può essere un'alternativa più semplice."},
+
+{n:"Observer", c:"comportamentali",
+ prob:"Definire un meccanismo di notifica per oggetti dipendenti quando cambia lo stato di un soggetto.",
+ ex:"Sistema di notifiche in un'app (email, SMS, push).",
+ uml:[
+   {nm:"Subject",mem:["- observers: List<Observer>","+ attach(o)","+ detach(o)","+ notify()"]},
+   {nm:"Observer",st:"interface",mem:["+ update()"]},
+   {nm:"ConcreteSubject",mem:["- state","+ getState()","+ setState(s)"]},
+   {nm:"ConcreteObserver",mem:["+ update()"]},
+ ],
+ rel:"Mediator centralizza, Observer distribuisce. Spesso usato con MVC."},
+
+{n:"State", c:"comportamentali",
+ prob:"Permettere a un oggetto di cambiare comportamento al cambiare del suo stato interno.",
+ ex:"Un player audio con stati “play”, “pause”, “stop”.",
+ uml:[
+   {nm:"Context",mem:["- state: State","+ request()","+ setState(s: State)"]},
+   {nm:"State",st:"interface",mem:["+ handle(context)"]},
+   {nm:"ConcreteStateA",mem:["+ handle(context)"]},
+   {nm:"ConcreteStateB",mem:["+ handle(context)"]},
+ ],
+ rel:"Simile a Strategy ma cambia automaticamente con lo stato. Può usare Flyweight se gli stati sono condivisi."},
+
+{n:"Strategy", c:"comportamentali",
+ prob:"Definire una famiglia di algoritmi, incapsularli e renderli intercambiabili.",
+ ex:"Algoritmi di ordinamento (bubble sort, quick sort) selezionabili a runtime.",
+ uml:[
+   {nm:"Context",mem:["- strategy: Strategy","+ executeStrategy()"]},
+   {nm:"Strategy",st:"interface",mem:["+ execute()"]},
+   {nm:"ConcreteStrategyA",mem:["+ execute()"]},
+   {nm:"ConcreteStrategyB",mem:["+ execute()"]},
+ ],
+ rel:"Simile a State ma con cambio esplicito. Command incapsula richieste, Strategy incapsula algoritmi. Usa delega (vs eredità del Template Method)."},
+
+{n:"Template Method", c:"comportamentali",
+ prob:"Definire lo scheletro di un algoritmo in una superclasse, lasciando alle sottoclassi alcuni passi.",
+ ex:"Processo di preparazione di una bevanda (tè, caffè) con passi comuni.",
+ uml:[
+   {nm:"AbstractClass",mem:["+ templateMethod()","# primitiveOperation1()","# primitiveOperation2()"]},
+   {nm:"ConcreteClass",mem:["+ primitiveOperation1()","+ primitiveOperation2()"]},
+ ],
+ rel:"Factory Method è un caso speciale di Template Method. Strategy usa delega, Template Method usa eredità."},
+
+{n:"Visitor", c:"comportamentali",
+ prob:"Separare algoritmi dagli oggetti su cui operano, per aggiungere nuove operazioni senza modificare le classi.",
+ ex:"Calcolare il costo totale di un carrello con diversi tipi di prodotti.",
+ uml:[
+   {nm:"Visitor",st:"interface",mem:["+ visitElementA(A)","+ visitElementB(B)"]},
+   {nm:"ConcreteVisitor1",mem:["+ visitElementA(A)","+ visitElementB(B)"]},
+   {nm:"Element",st:"interface",mem:["+ accept(visitor)"]},
+   {nm:"ConcreteElementA",mem:["+ accept(visitor)","+ featureA()"]},
+ ],
+ rel:"Usato con Iterator per attraversare strutture complesse. Simile a Command ma per operazioni su più oggetti."},
+];
+
+/* =========================================================
+   FORMULAZIONI ALTERNATIVE (modalità "Riconosci" / "Disegna" / "Spiega")
+   Per ogni pattern: 3 problemi + 3 esempi extra → con i testi originali
+   il pool di formulazioni risulta quadruplicato (×4).
+   ========================================================= */
+const ALT = {
+ "Factory Method":{prob:[
+   "Delegare alle sottoclassi la scelta della classe concreta da istanziare, tenendo la logica comune nella superclasse.",
+   "Definire un'interfaccia per creare un oggetto lasciando che siano le sottoclassi a decidere il tipo concreto.",
+   "Disaccoppiare il codice che usa un prodotto da quello che decide quale prodotto creare."], ex:[
+   "Un editor che apre file diversi creando il viewer adatto a ciascun formato.",
+   "Un framework UI in cui ogni dialogo decide quale tipo di pulsante creare.",
+   "Un client di pagamento in cui ogni sottoclasse istanzia il proprio processore."]},
+ "Abstract Factory":{prob:[
+   "Garantire che un insieme di prodotti correlati sia coerente e provenga dalla stessa famiglia.",
+   "Fornire un'interfaccia per creare gruppi di oggetti collegati senza vincolarsi alle classi concrete.",
+   "Poter scambiare un'intera famiglia di prodotti cambiando una sola factory."], ex:[
+   "Una UI multipiattaforma che crea widget coerenti per stile Material o Cupertino.",
+   "Un sistema di rendering che fornisce componenti grafici compatibili per DirectX o OpenGL.",
+   "Un e-commerce che genera spedizione, fattura ed etichetta coerenti per il mercato UE o USA."]},
+ "Builder":{prob:[
+   "Costruire un oggetto complesso con molte parti opzionali evitando costruttori con troppi parametri.",
+   "Riusare lo stesso processo di costruzione per ottenere rappresentazioni diverse dell'oggetto.",
+   "Isolare il codice di assemblaggio di un oggetto dalla sua logica di business."], ex:[
+   "Assemblare una pizza con tanti ingredienti opzionali senza un costruttore enorme.",
+   "Costruire in modo fluente una query SQL concatenando select, where e orderBy.",
+   "Generare lo stesso report in PDF, HTML o testo riusando gli stessi passi."]},
+ "Prototype":{prob:[
+   "Produrre nuovi oggetti clonando istanze esistenti invece di costruirle da zero.",
+   "Evitare una gerarchia di factory creando oggetti per copia di un esemplare configurato.",
+   "Replicare oggetti la cui inizializzazione è costosa partendo da un modello già pronto."], ex:[
+   "Duplicare una forma selezionata in un editor grafico senza conoscerne la classe.",
+   "Generare molti nemici clonando un esemplare modello già impostato.",
+   "Clonare un oggetto preconfigurato per evitare letture pesanti dal database."]},
+ "Singleton":{prob:[
+   "Garantire un unico punto di accesso globale a una risorsa condivisa.",
+   "Impedire la creazione di più istanze di una classe controllandone la costruzione.",
+   "Centralizzare in un'unica istanza uno stato o un servizio usato da tutta l'app."], ex:[
+   "Un gestore di configurazione unico accessibile ovunque nell'applicazione.",
+   "Un logger centralizzato creato in modo lazy alla prima richiesta.",
+   "Un pool di connessioni condiviso da tutto il programma."]},
+ "Adapter":{prob:[
+   "Convertire l'interfaccia di una classe in un'altra interfaccia attesa dal client.",
+   "Riusare una classe esistente la cui interfaccia non corrisponde a quella richiesta.",
+   "Far dialogare codice nuovo con librerie legacy senza modificarle."], ex:[
+   "Avvolgere una libreria di logging con metodi diversi da quelli attesi.",
+   "Tradurre l'output XML di un servizio nel JSON richiesto dal client.",
+   "Collegare un sistema di pagamento moderno a un gateway legacy."]},
+ "Bridge":{prob:[
+   "Disaccoppiare un'astrazione dalla sua implementazione per farle variare indipendentemente.",
+   "Evitare l'esplosione di sottoclassi separando due dimensioni che cambiano ortogonalmente.",
+   "Far evolvere astrazione e implementazione su gerarchie distinte collegate per composizione."], ex:[
+   "Combinare liberamente forme (cerchio, quadrato) e API di disegno (vettoriale, raster).",
+   "Un telecomando (astrazione) che comanda TV di marche diverse (implementazione).",
+   "Separare la logica di un messaggio (urgente/normale) dal canale d'invio (email/SMS)."]},
+ "Composite":{prob:[
+   "Trattare in modo uniforme oggetti singoli e gruppi di oggetti tramite la stessa interfaccia.",
+   "Rappresentare gerarchie parte-tutto in cui foglie e contenitori si usano allo stesso modo.",
+   "Applicare ricorsivamente un'operazione a strutture ad albero annidate."], ex:[
+   "Calcolare la dimensione totale trattando file e cartelle allo stesso modo.",
+   "Stampare un menu con voci semplici e sottomenù annidati in modo ricorsivo.",
+   "Sommare gli stipendi trattando un dipendente e un intero reparto uniformemente."]},
+ "Decorator":{prob:[
+   "Aggiungere responsabilità a un oggetto a runtime avvolgendolo, senza sottoclassare.",
+   "Comporre comportamenti in modo flessibile sovrapponendo più involucri.",
+   "Estendere le funzionalità di un oggetto mantenendone invariata l'interfaccia."], ex:[
+   "Avvolgere un flusso aggiungendo cifratura e compressione, anche combinate.",
+   "Aggiungere a un caffè latte, panna e sciroppo, ciascuno che modifica prezzo e descrizione.",
+   "Arricchire un servizio esistente con cache e logging avvolgendolo."]},
+ "Facade":{prob:[
+   "Offrire un punto d'ingresso unico e semplice a un sottosistema complesso.",
+   "Nascondere al client la complessità e le dipendenze interne di un insieme di classi.",
+   "Ridurre l'accoppiamento tra il client e i molti componenti di un sottosistema."], ex:[
+   "Una funzione convertiVideo() che nasconde decine di chiamate a codec.",
+   "Un metodo effettuaOrdine() che coordina inventario, pagamento e spedizione.",
+   "Una classe AvviaComputer che nasconde la sequenza di avvio di CPU, memoria e disco."]},
+ "Flyweight":{prob:[
+   "Ridurre il consumo di memoria condividendo lo stato comune tra molti oggetti.",
+   "Separare lo stato intrinseco condiviso da quello estrinseco passato dall'esterno.",
+   "Gestire enormi quantità di oggetti simili condividendone le parti immutabili."], ex:[
+   "Renderizzare milioni di alberi identici condividendo la grafica e variando la posizione.",
+   "Condividere l'oggetto-glifo di un carattere tra milioni di lettere di un testo.",
+   "Risparmiare RAM condividendo texture e colore tra milioni di proiettili."]},
+ "Proxy":{prob:[
+   "Fornire un sostituto che controlla l'accesso a un oggetto reale.",
+   "Inserire logica (cache, permessi, lazy load) prima o dopo la chiamata all'oggetto vero.",
+   "Rappresentare un oggetto remoto o costoso mantenendone la stessa interfaccia."], ex:[
+   "Caricare un'immagine pesante solo quando viene davvero visualizzata.",
+   "Verificare i permessi prima di inoltrare la chiamata a un oggetto sensibile.",
+   "Chiamare un oggetto remoto come se fosse locale tramite un sostituto."]},
+ "Chain of Responsibility":{prob:[
+   "Far passare una richiesta lungo una catena di handler finché uno la gestisce.",
+   "Disaccoppiare il mittente di una richiesta dai suoi possibili gestori.",
+   "Comporre dinamicamente una sequenza di gestori autonomi e ordinabili."], ex:[
+   "Una richiesta web che attraversa autenticazione, logging e rate-limiting.",
+   "Un ticket di supporto che sale di livello finché qualcuno lo risolve.",
+   "Un'approvazione di spesa che sale da team leader a manager a direttore."]},
+ "Command":{prob:[
+   "Incapsulare una richiesta come oggetto per accodarla, loggarla o annullarla.",
+   "Disaccoppiare chi invoca un'operazione da chi la esegue.",
+   "Trasformare un'azione in un oggetto parametrizzabile e rieseguibile."], ex:[
+   "Supportare undo/redo memorizzando ogni azione come oggetto.",
+   "Pulsanti e voci di menu che scatenano azioni incapsulate e accodabili.",
+   "Un telecomando universale che associa a ogni tasto un'operazione incapsulata."]},
+ "Iterator":{prob:[
+   "Attraversare gli elementi di una collezione senza esporne la struttura interna.",
+   "Offrire un modo uniforme per scorrere strutture dati diverse.",
+   "Supportare più scansioni indipendenti sulla stessa collezione."], ex:[
+   "Scorrere lista, set e albero in modo uniforme senza conoscerne la rappresentazione.",
+   "Percorrere i post di un feed con next()/hasNext().",
+   "Visitare in profondità un albero di file ignorando come è memorizzato."]},
+ "Mediator":{prob:[
+   "Centralizzare in un unico oggetto la comunicazione tra molti componenti.",
+   "Ridurre le dipendenze dirette tra oggetti facendoli dialogare tramite un coordinatore.",
+   "Eliminare l'accoppiamento molti-a-molti convogliando gli scambi in un hub."], ex:[
+   "Una smart home in cui i dispositivi parlano solo con un controllore centrale.",
+   "Una torre di controllo che gestisce le comunicazioni tra gli aerei.",
+   "Una chat room in cui i messaggi passano tutti da un oggetto centrale."]},
+ "Memento":{prob:[
+   "Catturare e ripristinare lo stato interno di un oggetto senza violarne l'incapsulamento.",
+   "Salvare istantanee dello stato per poterle ripristinare in seguito.",
+   "Affidare a un custode esterno gli snapshot di stato senza esporne i campi."], ex:[
+   "Salvare e ripristinare lo stato di un personaggio ai checkpoint di un gioco.",
+   "Annullare le modifiche di un editor tornando a istantanee precedenti.",
+   "Fare il rollback di una transazione allo stato salvato prima dell'operazione."]},
+ "Observer":{prob:[
+   "Notificare automaticamente più oggetti dipendenti quando cambia lo stato di un soggetto.",
+   "Stabilire una relazione uno-a-molti con sottoscrizione e notifica degli eventi.",
+   "Mantenere sincronizzati più osservatori con lo stato di un soggetto disaccoppiandoli."], ex:[
+   "Avvisare tutti gli iscritti a un canale quando arriva un nuovo messaggio.",
+   "Aggiornare i grafici collegati quando cambia il valore di una cella.",
+   "Notificare email, SMS e push quando la stazione meteo rileva nuovi dati."]},
+ "State":{prob:[
+   "Far cambiare comportamento a un oggetto al variare del suo stato interno.",
+   "Sostituire grandi condizionali sullo stato con classi-stato distinte.",
+   "Delegare a oggetti-stato la gestione del comportamento e delle transizioni."], ex:[
+   "Una macchinetta del caffè che si comporta diversamente in 'pronta', 'eroga', 'manutenzione'.",
+   "Un lettore audio che gestisce in modo diverso play, pause e stop.",
+   "Un documento che passa da bozza a revisione a pubblicato abilitando azioni diverse."]},
+ "Strategy":{prob:[
+   "Definire una famiglia di algoritmi intercambiabili e selezionabili a runtime.",
+   "Sostituire condizionali sull'algoritmo con oggetti-strategia interscambiabili.",
+   "Far variare l'algoritmo usato da un contesto senza modificarlo."], ex:[
+   "Scegliere a runtime PayPal, carta o bonifico mantenendo lo stesso flusso.",
+   "Scambiare l'algoritmo di ordinamento lasciando invariato chi lo invoca.",
+   "Calcolare il percorso con strategie diverse: auto, bici o mezzi pubblici."]},
+ "Template Method":{prob:[
+   "Definire lo scheletro di un algoritmo lasciando alle sottoclassi alcuni passi.",
+   "Fissare l'ordine delle operazioni nella superclasse e variarne i dettagli nelle sottoclassi.",
+   "Riusare la struttura comune di un algoritmo personalizzandone solo alcune fasi."], ex:[
+   "Un framework di test con setup, esecuzione e teardown; varia solo l'esecuzione.",
+   "Preparare una bevanda con passi fissi e fasi personalizzate per tè e caffè.",
+   "Un algoritmo di data mining con scheletro comune e sola analisi ridefinibile."]},
+ "Visitor":{prob:[
+   "Aggiungere nuove operazioni a una gerarchia di oggetti senza modificarne le classi.",
+   "Separare gli algoritmi dagli oggetti su cui operano tramite double dispatch.",
+   "Raggruppare operazioni correlate applicabili a elementi eterogenei in un unico visitor."], ex:[
+   "Aggiungere stampa, ottimizzazione e type-check ai nodi di un AST.",
+   "Calcolare costo, tasse e spedizione su un carrello di prodotti eterogenei.",
+   "Applicare antivirus e calcolo dimensione ai nodi di un file system."]},
+};
+P.forEach(p=>{ const a=ALT[p.n]; if(a){ p.probA=a.prob; p.exA=a.ex; } });
+
+/* =========================================================
+   SCENARI APPLICATIVI (modalità "Applica") - testi originali
+   ========================================================= */
+const SCEN = [
+ /* ---- Factory Method ---- */
+ {t:"Una superclasse 'Dialog' decide quale pulsante creare, ma sono le sottoclassi (WebDialog, WindowsDialog) a istanziarlo.", a:"Factory Method"},
+ {t:"Un framework di logistica chiama createTransport(): la classe base non sa se nascerà un Camion o una Nave, lo decide la sottoclasse.", a:"Factory Method"},
+ {t:"Un parser deve produrre documenti diversi (PDF, HTML, Word): vuoi un metodo creaDocumento() ridefinito da ogni sottoclasse esportatrice.", a:"Factory Method"},
+ {t:"Un gioco ha vari livelli che generano nemici diversi: ogni Livello sovrascrive spawnNemico() per decidere quale tipo istanziare.", a:"Factory Method"},
+
+ /* ---- Abstract Factory ---- */
+ {t:"Devi creare set coerenti di widget (pulsante+checkbox+menu) per stile Material o Cupertino, senza mischiarli.", a:"Abstract Factory"},
+ {t:"Un'app deve produrre mobili coordinati (sedia+divano+tavolo) tutti nello stesso stile, moderno o vittoriano.", a:"Abstract Factory"},
+ {t:"Un sistema di rendering deve fornire famiglie complete di componenti grafici compatibili tra loro per DirectX oppure OpenGL.", a:"Abstract Factory"},
+ {t:"Un e-commerce deve generare insiemi di oggetti correlati (spedizione+fattura+etichetta) coerenti per il mercato UE o USA.", a:"Abstract Factory"},
+
+ /* ---- Builder ---- */
+ {t:"Stai costruendo un oggetto 'Pizza' con tanti ingredienti opzionali e vuoi evitare un costruttore con 12 parametri.", a:"Builder"},
+ {t:"Devi assemblare una 'Casa' passo dopo passo (mura, porte, finestre, piscina) con configurazioni molto diverse.", a:"Builder"},
+ {t:"Vuoi costruire una query SQL complessa concatenando in modo fluente select(), where() e orderBy() prima di ottenere il risultato.", a:"Builder"},
+ {t:"Un generatore di report deve creare lo stesso documento in più formati riusando gli stessi passi di costruzione.", a:"Builder"},
+
+ /* ---- Prototype ---- */
+ {t:"Devi creare nuovi oggetti copiandone di esistenti già configurati, perché istanziarli da zero è costoso.", a:"Prototype"},
+ {t:"In un editor grafico vuoi duplicare una forma selezionata (cerchio, rettangolo) senza conoscerne la classe concreta.", a:"Prototype"},
+ {t:"Un gioco deve generare tanti nemici partendo da un esemplare 'modello' già impostato, clonandolo invece di ricostruirlo.", a:"Prototype"},
+ {t:"Hai oggetti la cui inizializzazione richiede letture pesanti dal DB: preferisci clonarne uno preconfigurato.", a:"Prototype"},
+
+ /* ---- Singleton ---- */
+ {t:"Vuoi garantire che il gestore della configurazione dell'app esista in una sola copia accessibile ovunque.", a:"Singleton"},
+ {t:"L'intera applicazione deve condividere un'unica connessione al database con un punto di accesso globale.", a:"Singleton"},
+ {t:"Serve un solo logger centralizzato in tutto il programma, creato in modo lazy alla prima richiesta.", a:"Singleton"},
+
+ /* ---- Adapter ---- */
+ {t:"Devi integrare una vecchia libreria di logging con metodi diversi da quelli attesi dal tuo nuovo sistema, senza modificarne il codice.", a:"Adapter"},
+ {t:"Un servizio esterno restituisce XML ma il tuo codice si aspetta JSON: serve un involucro che converta l'interfaccia.", a:"Adapter"},
+ {t:"Vuoi usare una libreria di terze parti con metodi incompatibili dietro l'interfaccia standard già usata dal tuo client.", a:"Adapter"},
+ {t:"Un sistema di pagamento moderno deve dialogare con un gateway legacy che espone firme di metodo del tutto diverse.", a:"Adapter"},
+
+ /* ---- Bridge ---- */
+ {t:"Un'app cross-platform deve avere temi UI (chiaro/scuro) indipendenti dalla piattaforma (Windows/Mac), variabili separatamente.", a:"Bridge"},
+ {t:"Hai forme (cerchio, quadrato) e API di disegno (vettoriale, raster) e vuoi combinarle liberamente senza esplosione di sottoclassi.", a:"Bridge"},
+ {t:"Un telecomando (astrazione) deve comandare TV di marche diverse (implementazione) potendo evolvere in modo indipendente.", a:"Bridge"},
+ {t:"Vuoi separare la logica di un messaggio (urgente/normale) dal canale di invio (email/SMS) così da variarli ortogonalmente.", a:"Bridge"},
+
+ /* ---- Composite ---- */
+ {t:"Un'app di disegno deve raggruppare figure in gruppi annidati e applicare “sposta” o “colora” sia a una figura sia a un intero gruppo allo stesso modo.", a:"Composite"},
+ {t:"Un file manager deve calcolare la dimensione totale trattando file singoli e cartelle (che contengono altre cartelle) allo stesso modo.", a:"Composite"},
+ {t:"Un menu di ristorante ha voci semplici e sottomenù annidati: vuoi stamparli con un'unica operazione ricorsiva uniforme.", a:"Composite"},
+ {t:"Un organigramma aziendale deve sommare gli stipendi trattando un dipendente e un intero reparto nello stesso modo.", a:"Composite"},
+
+ /* ---- Decorator ---- */
+ {t:"Devi aggiungere a runtime, in qualsiasi combinazione, bordi e barre di scorrimento a dei componenti grafici, senza creare una classe per ogni combinazione.", a:"Decorator"},
+ {t:"Vuoi avvolgere un flusso di dati aggiungendo dinamicamente cifratura e compressione, anche sovrapposte.", a:"Decorator"},
+ {t:"Un caffè base può ricevere a piacere latte, panna e sciroppo, ognuno che aumenta prezzo e descrizione senza nuove sottoclassi.", a:"Decorator"},
+ {t:"Vuoi arricchire un servizio già esistente con cache e logging avvolgendolo, mantenendone la stessa interfaccia.", a:"Decorator"},
+
+ /* ---- Facade ---- */
+ {t:"Vuoi offrire un'unica funzione 'convertiVideo()' che dietro nasconde decine di chiamate a un complesso sottosistema di codec.", a:"Facade"},
+ {t:"Un'app di e-commerce deve esporre 'effettuaOrdine()' che internamente coordina inventario, pagamento e spedizione.", a:"Facade"},
+ {t:"Vuoi una classe 'AvviaComputer' che nasconda al client la sequenza complessa di CPU, memoria e disco all'avvio.", a:"Facade"},
+ {t:"Una libreria multimediale espone tante classi di basso livello: offri un punto d'ingresso semplice per i casi d'uso comuni.", a:"Facade"},
+
+ /* ---- Flyweight ---- */
+ {t:"Un videogioco deve creare migliaia di alberi identici nella foresta: la grafica va condivisa, solo la posizione cambia.", a:"Flyweight"},
+ {t:"Un editor di testo gestisce milioni di caratteri: vuoi condividere l'oggetto-glifo (font, forma) tenendo fuori la posizione.", a:"Flyweight"},
+ {t:"Un simulatore di particelle deve risparmiare RAM condividendo texture e colore tra milioni di proiettili identici.", a:"Flyweight"},
+ {t:"Una mappa con migliaia di alberi/cespugli condivide lo stato intrinseco comune e passa quello estrinseco al metodo.", a:"Flyweight"},
+
+ /* ---- Proxy ---- */
+ {t:"Carichi un'immagine ad alta risoluzione solo quando viene effettivamente visualizzata, mostrando intanto un segnaposto.", a:"Proxy"},
+ {t:"Vuoi aggiungere controllo degli accessi davanti a un oggetto sensibile, verificando i permessi prima di inoltrare la chiamata.", a:"Proxy"},
+ {t:"Un client deve chiamare un oggetto remoto come se fosse locale: serve un sostituto che gestisca la comunicazione di rete.", a:"Proxy"},
+ {t:"Vuoi mettere in cache i risultati di un servizio costoso, intercettando le richieste prima che raggiungano l'oggetto reale.", a:"Proxy"},
+
+ /* ---- Chain of Responsibility ---- */
+ {t:"Una richiesta HTTP deve passare attraverso autenticazione, logging e rate-limiting; ogni filtro può gestirla o passarla al successivo.", a:"Chain of Responsibility"},
+ {t:"Un sistema di supporto inoltra il ticket dal livello base a quello esperto finché qualcuno è in grado di risolverlo.", a:"Chain of Responsibility"},
+ {t:"In un acquisto, l'approvazione di spesa sale dal team leader al manager al direttore a seconda dell'importo.", a:"Chain of Responsibility"},
+ {t:"Un validatore di form passa il dato attraverso una serie di controlli concatenati, ciascuno autonomo nel bloccare o proseguire.", a:"Chain of Responsibility"},
+
+ /* ---- Command ---- */
+ {t:"Un editor grafico deve supportare undo/redo memorizzando ogni azione dell'utente come oggetto da rieseguire o annullare.", a:"Command"},
+ {t:"Vuoi che i pulsanti di una GUI e le voci di menù scatenino azioni incapsulate, accodabili e parametrizzabili.", a:"Command"},
+ {t:"Un sistema deve mettere in coda e loggare richieste di lavoro da eseguire più tardi, ognuna come oggetto autonomo.", a:"Command"},
+ {t:"Un telecomando universale associa a ogni tasto un'operazione incapsulata, disaccoppiando chi preme dal dispositivo che agisce.", a:"Command"},
+
+ /* ---- Iterator ---- */
+ {t:"Devi attraversare in modo uniforme una lista, un set e un albero senza esporne la rappresentazione interna.", a:"Iterator"},
+ {t:"Vuoi scorrere gli elementi di una collezione personalizzata con next()/hasNext() senza che il client conosca la struttura dati.", a:"Iterator"},
+ {t:"Un feed social deve fornire un modo standard per percorrere i post, supportando anche più scansioni indipendenti in parallelo.", a:"Iterator"},
+ {t:"Un albero di file deve essere visitato in profondità senza che il chiamante sappia com'è memorizzato internamente.", a:"Iterator"},
+
+ /* ---- Mediator ---- */
+ {t:"Una smart home deve coordinare luci, termostato e allarme: ogni dispositivo parla solo con un controllore centrale, non tra loro.", a:"Mediator"},
+ {t:"In una finestra di dialogo, cambiando una checkbox si abilitano campi e pulsanti: vuoi centralizzare questa logica in un coordinatore.", a:"Mediator"},
+ {t:"Una torre di controllo gestisce le comunicazioni tra gli aerei, che non dialogano direttamente l'uno con l'altro.", a:"Mediator"},
+ {t:"In una chat room i partecipanti non si inviano messaggi a vicenda direttamente, ma tutto passa da un oggetto centrale.", a:"Mediator"},
+
+ /* ---- Memento ---- */
+ {t:"Un gioco deve salvare e ripristinare lo stato completo del personaggio (checkpoint) senza esporne i campi privati.", a:"Memento"},
+ {t:"Un editor di testo deve poter annullare le modifiche tornando a istantanee precedenti dello stato, senza romperne l'incapsulamento.", a:"Memento"},
+ {t:"Un software di disegno deve memorizzare snapshot del canvas per ripristinarli, custoditi da un oggetto esterno che non li ispeziona.", a:"Memento"},
+ {t:"Una transazione deve poter fare rollback ripristinando lo stato salvato prima dell'operazione.", a:"Memento"},
+
+ /* ---- Observer ---- */
+ {t:"Una chat deve avvisare automaticamente tutti gli iscritti a un canale ogni volta che arriva un nuovo messaggio.", a:"Observer"},
+ {t:"Un foglio di calcolo deve aggiornare automaticamente tutti i grafici collegati quando cambia il valore di una cella.", a:"Observer"},
+ {t:"Un'app meteo deve notificare in broadcast email, SMS e push ogni volta che la stazione rileva nuovi dati.", a:"Observer"},
+ {t:"Vuoi che più componenti UI si aggiornino da soli iscrivendosi ai cambiamenti di stato di un modello dati.", a:"Observer"},
+
+ /* ---- State ---- */
+ {t:"Una macchinetta del caffè ha stati 'pronta', 'eroga', 'manutenzione' e si comporta diversamente in ognuno; vuoi evitare un enorme switch.", a:"State"},
+ {t:"Un lettore audio si comporta diversamente in 'play', 'pause' e 'stop': vuoi che ogni stato gestisca da sé le transizioni.", a:"State"},
+ {t:"Un distributore automatico cambia comportamento in base alla fase (nessuna moneta, moneta inserita, prodotto erogato).", a:"State"},
+ {t:"Un documento passa da bozza a revisione a pubblicato e ogni fase abilita azioni diverse, senza condizionali sparsi.", a:"State"},
+
+ /* ---- Strategy ---- */
+ {t:"Un sistema di pagamento deve poter usare PayPal, carta o bonifico, scelti dall'utente al momento del checkout, mantenendo lo stesso flusso.", a:"Strategy"},
+ {t:"Vuoi poter scambiare a runtime l'algoritmo di ordinamento (bubble sort, quick sort) lasciando invariato chi lo invoca.", a:"Strategy"},
+ {t:"Un navigatore deve calcolare il percorso con strategie intercambiabili: auto, bici o mezzi pubblici.", a:"Strategy"},
+ {t:"Un'app deve comprimere file con algoritmi diversi (ZIP, RAR) selezionabili senza modificare il contesto che li usa.", a:"Strategy"},
+
+ /* ---- Template Method ---- */
+ {t:"Un framework di test definisce setup → esecuzione → teardown; le sottoclassi ridefiniscono solo il passo 'esecuzione'.", a:"Template Method"},
+ {t:"Preparare una bevanda segue passi fissi (scalda acqua, versa, servi); tè e caffè personalizzano solo i passi specifici.", a:"Template Method"},
+ {t:"Un algoritmo di data mining ha uno scheletro comune (apri, analizza, chiudi) e lascia alle sottoclassi solo la fase di analisi.", a:"Template Method"},
+ {t:"Un esportatore definisce l'ordine fisso delle operazioni e delega alle sottoclassi soltanto la formattazione dei singoli passi.", a:"Template Method"},
+
+ /* ---- Visitor ---- */
+ {t:"Un compilatore deve poter aggiungere nuove operazioni (stampa, ottimizza, type-check) sui nodi dell'AST senza modificarne le classi.", a:"Visitor"},
+ {t:"Un carrello con prodotti eterogenei deve calcolarne costo, tasse e spedizione come operazioni esterne separate dagli oggetti.", a:"Visitor"},
+ {t:"Vuoi aggiungere nuove esportazioni (in XML, in HTML) per una gerarchia di forme senza toccare le classi delle forme.", a:"Visitor"},
+ {t:"Un sistema di file deve applicare operazioni diverse (antivirus, calcolo dimensione) ai nodi senza modificarne le classi.", a:"Visitor"},
+
+ /* ===== SCENARI AGGIUNTIVI (pool ×4) ===== */
+
+ /* ---- Factory Method ---- */
+ {t:"Un client di posta apre gli allegati: ogni sottoclasse di Allegato ridefinisce creaViewer() per il proprio formato.", a:"Factory Method"},
+ {t:"Una piattaforma di pagamento definisce creaProcessore(); StripeService e PayPalService restituiscono il processore concreto.", a:"Factory Method"},
+ {t:"Un sistema di notifiche ha creaCanale() nella classe base; SmsNotifier ed EmailNotifier scelgono il canale specifico.", a:"Factory Method"},
+ {t:"Un'app di disegno chiama creaStrumento() e lascia che PennelloTool e GommaTool decidano lo strumento concreto.", a:"Factory Method"},
+ {t:"Un convertitore di valuta usa creaProvider(): ogni sottoclasse sceglie il fornitore di tassi da istanziare.", a:"Factory Method"},
+ {t:"Un IDE apre i sorgenti con creaEditor(): ogni tipo di progetto restituisce l'editor adatto al linguaggio.", a:"Factory Method"},
+ {t:"Un gestore di stampa definisce creaDriver() e affida a LaserPrinter e InkjetPrinter la scelta del driver.", a:"Factory Method"},
+ {t:"Un motore di gioco chiama creaProiettile(); ogni arma sovrascrive il metodo per generare il proiettile adatto.", a:"Factory Method"},
+ {t:"Un sistema di report definisce creaReport(): ogni filiale ridefinisce il metodo per il formato locale.", a:"Factory Method"},
+ {t:"Un lettore multimediale apre le tracce con creaDecoder(): ogni formato sceglie il decoder concreto.", a:"Factory Method"},
+ {t:"Un'app di mappe crea i marker con creaMarker(): ogni tipo di luogo decide il marker da istanziare.", a:"Factory Method"},
+ {t:"Un framework web istanzia la sessione con creaSessione(): ogni backend sceglie l'implementazione concreta.", a:"Factory Method"},
+
+ /* ---- Abstract Factory ---- */
+ {t:"Un editor di temi produce palette, icone e font coesi per il tema chiaro o per quello scuro.", a:"Abstract Factory"},
+ {t:"Un gioco crea ambientazioni coerenti (terreno, nemici, musica) per il mondo desertico o per quello glaciale.", a:"Abstract Factory"},
+ {t:"Una suite per ufficio genera componenti compatibili (documento, foglio, presentazione) per il formato Open o per quello proprietario.", a:"Abstract Factory"},
+ {t:"Un sistema domotico fornisce dispositivi coordinati (luce, termostato, serratura) della linea Zigbee o di quella Wi-Fi.", a:"Abstract Factory"},
+ {t:"Un framework UI crea controlli coerenti (input, slider, dropdown) per il desktop o per il mobile.", a:"Abstract Factory"},
+ {t:"Un'app di mappe produce stili coordinati (strade, etichette, POI) per la vista diurna o per quella notturna.", a:"Abstract Factory"},
+ {t:"Un simulatore crea veicoli coerenti (motore, ruote, carrozzeria) per la categoria sportiva o per quella utilitaria.", a:"Abstract Factory"},
+ {t:"Un sistema bancario genera moduli coordinati (bonifico, estratto, contratto) per il cliente privato o per quello business.", a:"Abstract Factory"},
+ {t:"Un compilatore produce backend coerenti (registri, istruzioni, ABI) per l'architettura ARM o per x86.", a:"Abstract Factory"},
+ {t:"Una piattaforma cloud crea risorse coordinate (VM, rete, storage) per il provider AWS o per Azure.", a:"Abstract Factory"},
+ {t:"Un editor musicale genera strumenti coerenti (sintetizzatore, effetti, mixer) per il preset analogico o per quello digitale.", a:"Abstract Factory"},
+ {t:"Un gestionale crea documenti fiscali coerenti (fattura, nota, ricevuta) per il regime ordinario o per quello forfettario.", a:"Abstract Factory"},
+
+ /* ---- Builder ---- */
+ {t:"Un configuratore d'auto compone passo passo motore, allestimento e optional prima di consegnare il veicolo finito.", a:"Builder"},
+ {t:"Un generatore di curriculum aggiunge sezioni in sequenza (anagrafica, esperienze, competenze) e restituisce il documento solo alla fine.", a:"Builder"},
+ {t:"Un'API di richieste HTTP costruisce in modo fluente header, parametri e corpo prima di inviare la chiamata.", a:"Builder"},
+ {t:"Un editor di personaggi assembla aspetto, statistiche ed equipaggiamento un passo alla volta.", a:"Builder"},
+ {t:"Un sistema di email compone destinatari, oggetto, corpo e allegati con metodi concatenati prima dell'invio.", a:"Builder"},
+ {t:"Un generatore di dashboard aggiunge widget, filtri e layout in modo incrementale e poi produce la pagina.", a:"Builder"},
+ {t:"Un compositore di contratti inserisce clausole opzionali una alla volta evitando un costruttore con decine di parametri.", a:"Builder"},
+ {t:"Un motore 3D costruisce una mesh aggiungendo vertici, facce e materiali passo dopo passo.", a:"Builder"},
+ {t:"Un'app di viaggi assembla un itinerario (voli, hotel, escursioni) e lo finalizza solo al termine.", a:"Builder"},
+ {t:"Un generatore di test crea uno scenario aggiungendo step, asserzioni e dati in sequenza.", a:"Builder"},
+ {t:"Un costruttore di notifiche imposta titolo, icona, azioni e priorità in modo fluente prima di mostrarle.", a:"Builder"},
+ {t:"Un compositore di pacchetti vacanza unisce volo, soggiorno e servizi opzionali con gli stessi passi riusabili.", a:"Builder"},
+
+ /* ---- Prototype ---- */
+ {t:"Un CAD duplica un componente meccanico complesso clonandone uno già configurato invece di ricrearlo.", a:"Prototype"},
+ {t:"Un'app di presentazioni copia una slide modello con tutti i suoi stili per crearne di nuove identiche.", a:"Prototype"},
+ {t:"Un editor di livelli clona blocchi di terreno preimpostati per popolare velocemente la mappa.", a:"Prototype"},
+ {t:"Un sistema di documenti genera nuovi contratti clonando un template già compilato nelle parti comuni.", a:"Prototype"},
+ {t:"Un tool grafico replica un layer con i suoi effetti partendo da una copia anziché ricostruirlo.", a:"Prototype"},
+ {t:"Un simulatore crea nuove particelle clonando un esemplare con parametri fisici già impostati.", a:"Prototype"},
+ {t:"Un'app di email duplica un template di newsletter preconfigurato per ogni nuova campagna.", a:"Prototype"},
+ {t:"Un editor di diagrammi clona un nodo con stile e connessioni di default invece di costruirlo da zero.", a:"Prototype"},
+ {t:"Un gioco gestionale copia un edificio modello già ottimizzato per piazzarne molte istanze.", a:"Prototype"},
+ {t:"Un sistema di configurazioni replica un profilo utente di base clonandolo per i nuovi account.", a:"Prototype"},
+ {t:"Un'app di disegno tecnico duplica una quotatura preimpostata anziché reimpostarne ogni proprietà.", a:"Prototype"},
+ {t:"Un motore di rendering clona materiali complessi già calibrati per applicarli a nuovi oggetti.", a:"Prototype"},
+
+ /* ---- Singleton ---- */
+ {t:"Un'app desktop deve avere un unico gestore delle preferenze accessibile da qualsiasi finestra.", a:"Singleton"},
+ {t:"Un server di gioco mantiene un solo registro globale delle partite attive con accesso centralizzato.", a:"Singleton"},
+ {t:"Un sistema embedded espone un'unica istanza del driver hardware per evitare conflitti di accesso.", a:"Singleton"},
+ {t:"Un framework deve fornire un unico contenitore di dipendenze condiviso da tutti i moduli.", a:"Singleton"},
+ {t:"Un'app mobile usa un solo gestore della cache delle immagini raggiungibile ovunque.", a:"Singleton"},
+ {t:"Un programma deve avere un'unica coda di stampa globale a cui tutti i thread accodano lavori.", a:"Singleton"},
+ {t:"Un sistema di metriche raccoglie statistiche in un'unica istanza centrale condivisa.", a:"Singleton"},
+ {t:"Un'app web mantiene un solo gestore della sessione utente accessibile da ogni controller.", a:"Singleton"},
+ {t:"Un motore di gioco usa un unico AudioManager per coordinare tutti i suoni.", a:"Singleton"},
+ {t:"Un'applicazione deve esporre un solo orologio di sistema simulato condiviso dai test.", a:"Singleton"},
+ {t:"Un servizio carica i file di traduzione una sola volta in un'istanza globale riutilizzata ovunque.", a:"Singleton"},
+ {t:"Un'app industriale usa un unico bus di comunicazione con i sensori, con punto d'accesso globale.", a:"Singleton"},
+
+ /* ---- Adapter ---- */
+ {t:"Un'app di mappe deve usare una libreria geografica che espone coordinate in un formato diverso da quello atteso.", a:"Adapter"},
+ {t:"Un sistema di reportistica deve leggere dati da un vecchio modulo COM dietro un'interfaccia moderna.", a:"Adapter"},
+ {t:"Un lettore multimediale deve riprodurre un formato gestito solo da un codec con API incompatibile.", a:"Adapter"},
+ {t:"Un'app deve integrare un SDK di terze parti senza adeguarvi tutto il codice client esistente.", a:"Adapter"},
+ {t:"Un sistema di e-commerce deve collegare un corriere che espone metodi di tracking diversi dallo standard interno.", a:"Adapter"},
+ {t:"Un software domotico deve comandare un dispositivo che usa un protocollo proprietario incompatibile.", a:"Adapter"},
+ {t:"Un cruscotto deve mostrare dati di un sensore che restituisce misure in unità e firme diverse.", a:"Adapter"},
+ {t:"Un'app deve usare una vecchia classe di stampa con metodi differenti dall'interfaccia Printer attesa.", a:"Adapter"},
+ {t:"Un sistema deve far leggere a un parser CSV un input fornito solo da uno stream binario legacy.", a:"Adapter"},
+ {t:"Un'app finanziaria deve interrogare un servizio SOAP esponendolo come se fosse l'interfaccia REST interna.", a:"Adapter"},
+ {t:"Un gioco deve usare un gamepad con API diverse da quelle del proprio sistema di input.", a:"Adapter"},
+ {t:"Un'app deve far dialogare un modulo di autenticazione esterno con l'interfaccia di login già usata dal client.", a:"Adapter"},
+
+ /* ---- Bridge ---- */
+ {t:"Un sistema di notifiche deve combinare tipi di messaggio (avviso, promemoria) con canali (email, push) variabili in modo indipendente.", a:"Bridge"},
+ {t:"Un player video deve separare i controlli di riproduzione dal motore di decodifica (software o hardware).", a:"Bridge"},
+ {t:"Un'app di reportistica deve disaccoppiare i tipi di report dai formati di esportazione (PDF, Excel).", a:"Bridge"},
+ {t:"Un editor grafico deve separare i tipi di documento dai motori di rendering (schermo, stampante).", a:"Bridge"},
+ {t:"Un sistema di pagamento deve disaccoppiare i tipi di transazione dai provider bancari sottostanti.", a:"Bridge"},
+ {t:"Un'app domotica deve separare i comandi astratti (accendi, regola) dai protocolli hardware concreti.", a:"Bridge"},
+ {t:"Un'interfaccia di disegno deve combinare forme con backend grafici (OpenGL, Canvas) senza moltiplicare le classi.", a:"Bridge"},
+ {t:"Un sistema di logging deve separare i livelli di log dai supporti di destinazione (file, rete, console).", a:"Bridge"},
+ {t:"Un'app di messaggistica deve disaccoppiare i tipi di conversazione dai trasporti (TCP, WebSocket).", a:"Bridge"},
+ {t:"Un gestionale deve separare i tipi di documento fiscale dai motori di archiviazione (locale, cloud).", a:"Bridge"},
+ {t:"Un sistema di stampa deve combinare formati di etichetta con tecnologie di stampa diverse in modo indipendente.", a:"Bridge"},
+ {t:"Un'app cross-platform deve separare i widget astratti dalle implementazioni native dei vari sistemi operativi.", a:"Bridge"},
+
+ /* ---- Composite ---- */
+ {t:"Un editor di presentazioni raggruppa forme e gruppi annidati applicando 'allinea' allo stesso modo a entrambi.", a:"Composite"},
+ {t:"Un sistema di permessi calcola i diritti totali trattando un utente singolo e un gruppo di utenti uniformemente.", a:"Composite"},
+ {t:"Un'app di task gestisce attività e sotto-progetti annidati calcolandone l'avanzamento in modo ricorsivo.", a:"Composite"},
+ {t:"Un motore di scena di gioco tratta singoli oggetti e gruppi di oggetti con le stesse operazioni di trasformazione.", a:"Composite"},
+ {t:"Un editor HTML rappresenta elementi e contenitori annidati renderizzandoli con la stessa interfaccia.", a:"Composite"},
+ {t:"Un sistema di bilancio somma le voci trattando una singola spesa e una categoria di spese allo stesso modo.", a:"Composite"},
+ {t:"Un'app di disegno vettoriale applica 'ruota' indifferentemente a una figura o a un intero gruppo.", a:"Composite"},
+ {t:"Un gestore di playlist tratta brani singoli e playlist annidate con le stesse operazioni di riproduzione.", a:"Composite"},
+ {t:"Un sistema di categorie e-commerce naviga prodotti e sottocategorie annidate in modo ricorsivo uniforme.", a:"Composite"},
+ {t:"Un editor di circuiti tratta componenti singoli e moduli composti allo stesso modo nel calcolo del consumo.", a:"Composite"},
+ {t:"Un'app di cartelle cloud calcola lo spazio occupato trattando file e cartelle annidate uniformemente.", a:"Composite"},
+ {t:"Un sistema di menu di navigazione gestisce voci semplici e gruppi annidati con un'unica operazione di rendering.", a:"Composite"},
+
+ /* ---- Decorator ---- */
+ {t:"Un sistema di testo deve poter applicare a runtime grassetto, corsivo e sottolineato in qualsiasi combinazione.", a:"Decorator"},
+ {t:"Un servizio di notifiche aggiunge dinamicamente invio via SMS, email e Slack allo stesso messaggio.", a:"Decorator"},
+ {t:"Un flusso di rete avvolge la connessione aggiungendo compressione e cifratura sovrapponibili.", a:"Decorator"},
+ {t:"Un componente UI riceve a piacere bordo, ombra e tooltip senza creare una classe per ogni combinazione.", a:"Decorator"},
+ {t:"Un repository di dati viene avvolto con cache, retry e logging mantenendo la stessa interfaccia.", a:"Decorator"},
+ {t:"Un'API di pagamento aggiunge dinamicamente validazione, audit e antifrode attorno alla chiamata base.", a:"Decorator"},
+ {t:"Un editor di immagini applica a runtime filtri sovrapponibili (luminosità, contrasto, sfocatura).", a:"Decorator"},
+ {t:"Un sistema di file viene avvolto per aggiungere cifratura e firma digitale senza modificarne l'interfaccia.", a:"Decorator"},
+ {t:"Un componente di lettura aggiunge buffering e conteggio dei byte attorno allo stream base.", a:"Decorator"},
+ {t:"Un servizio HTTP viene decorato con autenticazione, rate-limit e tracing in modo combinabile.", a:"Decorator"},
+ {t:"Una pizza base riceve a piacere ingredienti extra, ciascuno che aumenta prezzo e descrizione senza nuove sottoclassi.", a:"Decorator"},
+ {t:"Un widget di lista viene arricchito a runtime con scrollbar e bordo avvolgendolo più volte.", a:"Decorator"},
+
+ /* ---- Facade ---- */
+ {t:"Un sistema di prenotazione espone 'prenotaViaggio()' che coordina voli, hotel e pagamenti internamente.", a:"Facade"},
+ {t:"Un framework di gioco offre 'avviaPartita()' che dietro inizializza grafica, audio e fisica.", a:"Facade"},
+ {t:"Un'app bancaria fornisce 'eseguiBonifico()' che nasconde validazione, antifrode e contabilità.", a:"Facade"},
+ {t:"Una libreria di IA espone 'analizzaImmagine()' nascondendo preprocessing, modello e postprocessing.", a:"Facade"},
+ {t:"Un sistema di build offre un comando 'compila()' che coordina dipendenze, compilatore e linker.", a:"Facade"},
+ {t:"Un'app di backup fornisce 'eseguiBackup()' che nasconde snapshot, compressione e upload.", a:"Facade"},
+ {t:"Un client smart home espone 'modalitàNotte()' che coordina luci, termostato e allarme.", a:"Facade"},
+ {t:"Un sistema di reportistica offre 'generaReport()' che nasconde query, aggregazione e impaginazione.", a:"Facade"},
+ {t:"Un'app di streaming fornisce 'riproduci()' che nasconde buffering, decodifica e sincronizzazione.", a:"Facade"},
+ {t:"Un servizio di spedizioni espone 'spedisci()' che coordina tariffe, etichette e tracking.", a:"Facade"},
+ {t:"Un motore di pagamento offre 'paga()' che nasconde gateway, valute e ricevute.", a:"Facade"},
+ {t:"Un sistema di onboarding fornisce 'registraUtente()' che coordina account, email di benvenuto e profilo.", a:"Facade"},
+
+ /* ---- Flyweight ---- */
+ {t:"Una mappa di gioco mostra migliaia di erbe identiche condividendo la mesh e variando solo la posizione.", a:"Flyweight"},
+ {t:"Un editor di testo gestisce documenti enormi condividendo gli oggetti-carattere per font e dimensione.", a:"Flyweight"},
+ {t:"Un sistema GIS visualizza milioni di icone identiche condividendone la grafica per risparmiare memoria.", a:"Flyweight"},
+ {t:"Un simulatore di traffico crea migliaia di auto identiche condividendo modello e texture comuni.", a:"Flyweight"},
+ {t:"Un gioco a griglia rappresenta enormi quantità di tessere condividendo il tipo e variando le coordinate.", a:"Flyweight"},
+ {t:"Un'app di chat riusa oggetti-emoji condivisi invece di crearne uno per ogni messaggio.", a:"Flyweight"},
+ {t:"Un motore di particelle condivide forma e colore tra milioni di scintille passando posizione e velocità dall'esterno.", a:"Flyweight"},
+ {t:"Un renderer di foreste condivide pochi modelli d'albero tra migliaia di istanze sparse sul terreno.", a:"Flyweight"},
+ {t:"Un editor di partiture condivide i glifi delle note tra le migliaia di simboli dello spartito.", a:"Flyweight"},
+ {t:"Un'app cartografica condivide lo stile dei segnaposto comuni tra moltissimi punti d'interesse.", a:"Flyweight"},
+ {t:"Un sistema di rendering 3D condivide i materiali tra migliaia di mattoni identici di un edificio.", a:"Flyweight"},
+ {t:"Un gioco di strategia mostra grandi eserciti condividendo l'aspetto delle unità identiche.", a:"Flyweight"},
+
+ /* ---- Proxy ---- */
+ {t:"Un'app di documenti carica un PDF pesante solo quando l'utente lo apre davvero, mostrando intanto un'anteprima.", a:"Proxy"},
+ {t:"Un servizio espone un oggetto remoto tramite un sostituto che gestisce la serializzazione di rete.", a:"Proxy"},
+ {t:"Un sistema mette davanti a un database un sostituto che memorizza in cache le query costose.", a:"Proxy"},
+ {t:"Un'API protegge un servizio sensibile con un sostituto che verifica i permessi prima di inoltrare.", a:"Proxy"},
+ {t:"Un'app di mappe carica le tile ad alta risoluzione solo all'avvicinarsi dello zoom, dietro un segnaposto.", a:"Proxy"},
+ {t:"Un sistema registra ogni accesso a un oggetto critico tramite un sostituto che fa da log.", a:"Proxy"},
+ {t:"Un client cloud rappresenta un file remoto con un sostituto locale che lo scarica solo se serve.", a:"Proxy"},
+ {t:"Un gestore di immagini posticipa il caricamento di una galleria mostrando placeholder finché non servono.", a:"Proxy"},
+ {t:"Un servizio espone un oggetto costoso dietro un sostituto che ne controlla il numero di chiamate.", a:"Proxy"},
+ {t:"Un sistema bancario protegge un conto con un sostituto che applica controlli antifrode prima dell'operazione.", a:"Proxy"},
+ {t:"Un'app di video carica i fotogrammi in streaming dietro un sostituto che li richiede su domanda.", a:"Proxy"},
+ {t:"Un microservizio espone un'API esterna dietro un sostituto che applica retry e timeout.", a:"Proxy"},
+
+ /* ---- Chain of Responsibility ---- */
+ {t:"Un middleware web fa attraversare la richiesta da CORS, autenticazione e compressione; ognuno la gestisce o la passa.", a:"Chain of Responsibility"},
+ {t:"Un sistema di approvazione ferie inoltra la domanda dal responsabile all'HR alla direzione secondo i giorni richiesti.", a:"Chain of Responsibility"},
+ {t:"Un gestore di eventi UI passa il click dal componente più interno verso l'esterno finché qualcuno lo gestisce.", a:"Chain of Responsibility"},
+ {t:"Un sistema di sconti applica regole in sequenza: ogni handler può applicarsi o cedere il turno al successivo.", a:"Chain of Responsibility"},
+ {t:"Un filtro antispam fa passare l'email attraverso controlli concatenati, ciascuno autonomo nel bloccarla.", a:"Chain of Responsibility"},
+ {t:"Un parser di comandi passa l'input a handler successivi finché uno riconosce e gestisce il comando.", a:"Chain of Responsibility"},
+ {t:"Un sistema di logging inoltra il messaggio a livelli concatenati (debug, info, errore) secondo la gravità.", a:"Chain of Responsibility"},
+ {t:"Un help desk inoltra la segnalazione dal bot all'operatore allo specialista finché qualcuno risolve.", a:"Chain of Responsibility"},
+ {t:"Un gateway di pagamento prova metodi in catena finché una banca accetta la transazione.", a:"Chain of Responsibility"},
+ {t:"Un validatore di upload passa il file attraverso controlli di tipo, dimensione e contenuto in sequenza.", a:"Chain of Responsibility"},
+ {t:"Un sistema di moderazione fa scorrere il commento tra filtri concatenati che possono approvarlo o bloccarlo.", a:"Chain of Responsibility"},
+ {t:"Un router di richieste inoltra la chiamata a gestori successivi finché uno la prende in carico.", a:"Chain of Responsibility"},
+
+ /* ---- Command ---- */
+ {t:"Un'app di disegno incapsula ogni operazione (sposta, ruota, colora) come comando per registrare la cronologia.", a:"Command"},
+ {t:"Un sistema domotico accoda comandi (accendi, abbassa) eseguibili a orari programmati.", a:"Command"},
+ {t:"Un IDE registra ogni azione di refactoring come comando per poterla annullare e rifare.", a:"Command"},
+ {t:"Un robot esegue una sequenza di comandi di movimento incapsulati e rieseguibili.", a:"Command"},
+ {t:"Un foglio di calcolo incapsula ogni modifica di cella come comando per la cronologia undo/redo.", a:"Command"},
+ {t:"Un sistema di job mette in coda richieste di lavoro come oggetti autonomi da eseguire più tardi.", a:"Command"},
+ {t:"Un editor musicale registra ogni nota inserita come comando annullabile.", a:"Command"},
+ {t:"Un'app di trading incapsula ogni ordine come comando loggabile e revocabile.", a:"Command"},
+ {t:"Una GUI associa a ogni voce di menu un comando incapsulato e parametrizzabile.", a:"Command"},
+ {t:"Un sistema di automazione domestica salva macro come sequenze di comandi rieseguibili.", a:"Command"},
+ {t:"Un editor di livelli incapsula ogni piazzamento di oggetto come comando per supportare l'undo.", a:"Command"},
+ {t:"Un terminale incapsula ogni operazione utente come comando da poter ripetere o annullare.", a:"Command"},
+
+ /* ---- Iterator ---- */
+ {t:"Una libreria deve far scorrere i risultati di una query paginata senza esporne la struttura interna.", a:"Iterator"},
+ {t:"Un'app deve attraversare un grafo di amici con next()/hasNext() ignorandone la rappresentazione.", a:"Iterator"},
+ {t:"Un sistema deve percorrere una collezione personalizzata supportando scansioni multiple simultanee.", a:"Iterator"},
+ {t:"Un editor deve iterare sugli elementi di un documento ad albero senza svelarne la struttura.", a:"Iterator"},
+ {t:"Un'app musicale deve scorrere i brani di una playlist in avanti e indietro in modo uniforme.", a:"Iterator"},
+ {t:"Un parser deve attraversare i token di un flusso uno alla volta nascondendo il buffer interno.", a:"Iterator"},
+ {t:"Un sistema deve percorrere righe di un risultato DB senza che il client conosca il cursore sottostante.", a:"Iterator"},
+ {t:"Un'app deve iterare su una matrice sparsa visitando solo gli elementi non nulli in modo trasparente.", a:"Iterator"},
+ {t:"Un gestore di file deve scorrere ricorsivamente le voci di una cartella nascondendone la memorizzazione.", a:"Iterator"},
+ {t:"Un feed di notizie deve fornire uno scorrimento standard dei post supportando più lettori indipendenti.", a:"Iterator"},
+ {t:"Un'app deve attraversare una struttura ad anello in modo uniforme senza esporne i puntatori.", a:"Iterator"},
+ {t:"Un motore di ricerca deve scorrere i risultati ordinati con un'interfaccia uniforme di avanzamento.", a:"Iterator"},
+
+ /* ---- Mediator ---- */
+ {t:"Un form complesso fa coordinare campi e validazioni da un unico controllore invece di legarli a vicenda.", a:"Mediator"},
+ {t:"Un sistema di trading fa passare gli ordini tra trader e mercato attraverso un coordinatore centrale.", a:"Mediator"},
+ {t:"Un editor collaborativo fa convogliare le modifiche dei vari utenti in un mediatore che le coordina.", a:"Mediator"},
+ {t:"Un cruscotto d'auto fa dialogare sensori e indicatori tramite una centralina che li coordina.", a:"Mediator"},
+ {t:"Un gioco di squadra fa coordinare i bot da un comandante centrale, senza che si parlino direttamente.", a:"Mediator"},
+ {t:"Un sistema di prenotazioni fa interagire sale, utenti e calendario tramite un coordinatore unico.", a:"Mediator"},
+ {t:"Un'app di workflow fa comunicare i moduli attraverso un orchestratore che instrada gli eventi.", a:"Mediator"},
+ {t:"Un wizard a più schermate fa gestire da un mediatore le transizioni e i dati tra i passi.", a:"Mediator"},
+ {t:"Un sistema di allarme fa coordinare sensori e attuatori tramite una centrale che decide le azioni.", a:"Mediator"},
+ {t:"Una dashboard fa dialogare i widget attraverso un coordinatore, evitando dipendenze incrociate.", a:"Mediator"},
+ {t:"Un simulatore di rete fa instradare tutti i messaggi tra i nodi tramite un commutatore centrale.", a:"Mediator"},
+ {t:"Un sistema di domotica fa coordinare le scene da un hub centrale a cui ogni dispositivo si rivolge.", a:"Mediator"},
+
+ /* ---- Memento ---- */
+ {t:"Un editor di immagini salva snapshot del progetto per poter tornare a versioni precedenti senza esporne i campi.", a:"Memento"},
+ {t:"Un IDE memorizza lo stato della sessione per ripristinarlo dopo un riavvio.", a:"Memento"},
+ {t:"Un gioco di strategia salva lo stato della partita in slot ripristinabili custoditi all'esterno.", a:"Memento"},
+ {t:"Un editor di diagrammi conserva istantanee del canvas per annullare modifiche complesse.", a:"Memento"},
+ {t:"Un form a più passi salva lo stato di ogni schermata per poter tornare indietro senza perdere i dati.", a:"Memento"},
+ {t:"Un'app di scrittura crea checkpoint del testo per ripristinare versioni precedenti del documento.", a:"Memento"},
+ {t:"Un sistema di configurazione salva lo stato prima di una modifica per poterla annullare.", a:"Memento"},
+ {t:"Un simulatore registra istantanee dello stato fisico per riprodurre l'evoluzione da un punto.", a:"Memento"},
+ {t:"Un editor 3D conserva snapshot della scena per ripristinarla dopo operazioni distruttive.", a:"Memento"},
+ {t:"Un'app finanziaria salva lo stato del portafoglio prima di un'operazione per consentire il rollback.", a:"Memento"},
+ {t:"Un browser memorizza lo stato della pagina per ripristinarlo navigando indietro.", a:"Memento"},
+ {t:"Un editor di livelli salva lo stato della mappa per tornare a una versione precedente senza violarne l'incapsulamento.", a:"Memento"},
+
+ /* ---- Observer ---- */
+ {t:"Un'app di borsa aggiorna automaticamente tutti i widget iscritti al variare del prezzo di un titolo.", a:"Observer"},
+ {t:"Un sistema di magazzino notifica i moduli iscritti ogni volta che cambia la giacenza di un prodotto.", a:"Observer"},
+ {t:"Un editor MVC aggiorna tutte le viste iscritte quando cambia lo stato del modello.", a:"Observer"},
+ {t:"Un'app IoT avvisa in broadcast tutti i sottoscrittori quando un sensore supera una soglia.", a:"Observer"},
+ {t:"Un sistema di notifiche push aggiorna tutti i dispositivi iscritti quando arriva un nuovo evento.", a:"Observer"},
+ {t:"Un gioco aggiorna interfaccia, audio e statistiche iscritti al cambiare dei punti vita del personaggio.", a:"Observer"},
+ {t:"Un'app meteo notifica tutti i pannelli iscritti quando arrivano nuove previsioni.", a:"Observer"},
+ {t:"Un sistema di abbonamenti avvisa gli iscritti a un autore ogni volta che pubblica un contenuto.", a:"Observer"},
+ {t:"Un cruscotto aggiorna automaticamente i grafici sottoscritti quando arrivano nuovi dati di telemetria.", a:"Observer"},
+ {t:"Un'app di chat segnala lo stato 'sta scrivendo' a tutti i partecipanti iscritti alla conversazione.", a:"Observer"},
+ {t:"Un sistema di build notifica gli strumenti iscritti al completamento di ogni fase.", a:"Observer"},
+ {t:"Un'app di domotica aggiorna tutti i pannelli iscritti quando cambia lo stato di un dispositivo.", a:"Observer"},
+
+ /* ---- State ---- */
+ {t:"Un tornello cambia comportamento tra 'bloccato' e 'sbloccato' delegando le transizioni agli stati.", a:"State"},
+ {t:"Un ordine e-commerce si comporta diversamente in 'creato', 'pagato', 'spedito' senza condizionali sparsi.", a:"State"},
+ {t:"Una connessione di rete reagisce in modo diverso in 'disconnessa', 'in handshake', 'attiva'.", a:"State"},
+ {t:"Un personaggio di gioco gestisce input diversi in 'fermo', 'corsa', 'salto' delegando a oggetti-stato.", a:"State"},
+ {t:"Un semaforo cambia comportamento tra verde, giallo e rosso lasciando che ogni stato decida il successivo.", a:"State"},
+ {t:"Un editor passa da 'visualizzazione' a 'modifica' a 'sola lettura' abilitando azioni diverse per ogni stato.", a:"State"},
+ {t:"Un bancomat si comporta diversamente in 'attesa carta', 'attesa PIN', 'erogazione' senza un grande switch.", a:"State"},
+ {t:"Un thread gestisce in modo diverso 'pronto', 'in esecuzione', 'in attesa' delegando agli stati.", a:"State"},
+ {t:"Un lettore di e-book reagisce diversamente in 'lettura', 'ricerca', 'segnalibro' a seconda dello stato.", a:"State"},
+ {t:"Un ascensore cambia comportamento tra 'fermo', 'salita', 'discesa' lasciando agli stati le transizioni.", a:"State"},
+ {t:"Un gioco a turni gestisce 'turno giocatore', 'turno avversario', 'pausa' con stati distinti.", a:"State"},
+ {t:"Un upload reagisce diversamente in 'in coda', 'in corso', 'completato', 'errore' senza condizionali annidati.", a:"State"},
+
+ /* ---- Strategy ---- */
+ {t:"Un'app di mappe deve scegliere a runtime l'algoritmo di routing (più veloce, più corto, panoramico).", a:"Strategy"},
+ {t:"Un sistema di prezzi applica strategie di sconto intercambiabili senza modificare il calcolo del totale.", a:"Strategy"},
+ {t:"Un gioco seleziona a runtime la strategia dell'IA nemica (aggressiva, difensiva, casuale).", a:"Strategy"},
+ {t:"Un'app di immagini sceglie l'algoritmo di compressione (lossless, lossy) lasciando invariato il salvataggio.", a:"Strategy"},
+ {t:"Un sistema di pagamenti scambia a runtime la strategia di calcolo delle commissioni.", a:"Strategy"},
+ {t:"Un motore di rendering seleziona la strategia di illuminazione (realistica, stilizzata) senza toccare il contesto.", a:"Strategy"},
+ {t:"Un'app di trading sceglie a runtime la strategia di esecuzione degli ordini.", a:"Strategy"},
+ {t:"Un sistema di backup seleziona l'algoritmo (completo, incrementale, differenziale) in modo intercambiabile.", a:"Strategy"},
+ {t:"Un editor sceglie la strategia di formattazione del testo (giustificato, allineato) a runtime.", a:"Strategy"},
+ {t:"Un'app di consegne seleziona la strategia di assegnazione dei corrieri senza modificare il flusso.", a:"Strategy"},
+ {t:"Un sistema di matchmaking scambia l'algoritmo di abbinamento dei giocatori in base alla modalità.", a:"Strategy"},
+ {t:"Un'app di analisi sceglie a runtime la strategia di previsione (media mobile, regressione) intercambiabile.", a:"Strategy"},
+
+ /* ---- Template Method ---- */
+ {t:"Un framework di importazione definisce apri → valida → salva e lascia variare solo la validazione.", a:"Template Method"},
+ {t:"Un processo di onboarding fissa i passi crea account → invia email → configura profilo, ridefinendone alcuni.", a:"Template Method"},
+ {t:"Un gioco definisce inizializza → loop → termina lasciando alle sottoclassi solo il contenuto del loop.", a:"Template Method"},
+ {t:"Un esportatore fissa apri file → scrivi intestazione → scrivi corpo → chiudi, variando solo il corpo.", a:"Template Method"},
+ {t:"Un algoritmo di ordinamento definisce confronta → scambia → ripeti lasciando ridefinire il confronto.", a:"Template Method"},
+ {t:"Un report definisce raccogli dati → elabora → impagina e lascia personalizzare solo l'elaborazione.", a:"Template Method"},
+ {t:"Una pipeline di build fissa pulisci → compila → testa → pacchettizza, variando i singoli passi.", a:"Template Method"},
+ {t:"Un'app di cottura definisce preriscalda → cuoci → raffredda lasciando alle ricette i parametri specifici.", a:"Template Method"},
+ {t:"Un sistema di autenticazione fissa verifica credenziali → crea sessione → registra accesso, variando la verifica.", a:"Template Method"},
+ {t:"Un crawler definisce scarica → estrai → salva e lascia alle sottoclassi solo l'estrazione.", a:"Template Method"},
+ {t:"Un parser definisce apri → leggi token → costruisci albero lasciando variare la lettura dei token.", a:"Template Method"},
+ {t:"Un workflow di pagamento fissa valida → addebita → notifica, lasciando personalizzare solo l'addebito.", a:"Template Method"},
+
+ /* ---- Visitor ---- */
+ {t:"Un'app di disegno deve aggiungere operazioni (calcolo area, esportazione) alle forme senza modificarne le classi.", a:"Visitor"},
+ {t:"Un interprete deve applicare nuove operazioni (valutazione, stampa) ai nodi dell'albero sintattico.", a:"Visitor"},
+ {t:"Un sistema documentale deve aggiungere operazioni (conteggio parole, indicizzazione) agli elementi senza toccarli.", a:"Visitor"},
+ {t:"Un editor di scene deve applicare operazioni (calcolo collisioni, serializzazione) ai nodi eterogenei.", a:"Visitor"},
+ {t:"Un compilatore deve aggiungere passi (ottimizzazione, generazione codice) sull'AST senza modificarne i nodi.", a:"Visitor"},
+ {t:"Un'app di reportistica deve applicare nuove esportazioni (CSV, JSON) a una gerarchia di voci senza alterarla.", a:"Visitor"},
+ {t:"Un sistema bancario deve calcolare operazioni diverse (interessi, tasse) su tipi di conto eterogenei dall'esterno.", a:"Visitor"},
+ {t:"Un editor grafico deve aggiungere esportazioni (SVG, PNG) alle figure senza modificarne le classi.", a:"Visitor"},
+ {t:"Un gestore di magazzino deve applicare operazioni (valorizzazione, inventario) a tipi di articolo diversi.", a:"Visitor"},
+ {t:"Un motore di gioco deve applicare effetti (danno, cura) a entità eterogenee senza modificarne le classi.", a:"Visitor"},
+ {t:"Un sistema HR deve calcolare operazioni diverse (stipendio, ferie) su categorie di dipendenti dall'esterno.", a:"Visitor"},
+ {t:"Un editor musicale deve applicare operazioni (trasposizione, esportazione) agli elementi della partitura senza toccarli.", a:"Visitor"},
+];
+
+/* =========================================================
+   PRO / CONTRO per ciascun pattern (modalità "Spiega")
+   ========================================================= */
+const EXTRA = {
+ "Factory Method":{pro:["Incapsula la creazione degli oggetti","Rispetta Open/Closed","Promuove il basso accoppiamento"],con:["Può introdurre troppe sottoclassi","Aumenta la complessità del codice"]},
+ "Abstract Factory":{pro:["Isola il codice dalle classi concrete","Assicura la compatibilità tra prodotti correlati","Facilita il cambio di intere famiglie"],con:["Molte interfacce e classi","Difficile supportare nuovi tipi di prodotto"]},
+ "Builder":{pro:["Costruzione passo passo","Riusa il codice di costruzione","Isola la costruzione dalla business logic"],con:["Aumenta il numero di classi","Richiede un Director"]},
+ "Prototype":{pro:["Clona senza accoppiamento alle classi concrete","Elimina codice di inizializzazione ripetuto","Alternativa all'ereditarietà"],con:["Difficile clonare oggetti con riferimenti circolari","Difficile clonare stati interni complessi"]},
+ "Singleton":{pro:["Controllo sull'unica istanza","Accesso globale","Inizializzazione lazy"],con:["Viola il Single Responsibility Principle","Difficile da testare","Può mascherare un design scadente"]},
+ "Adapter":{pro:["Rende compatibili interfacce diverse","Rispetta Open/Closed"],con:["Aumenta la complessità con nuove classi"]},
+ "Bridge":{pro:["Cambia implementazioni a runtime","Rispetta Open/Closed e SRP"],con:["Può complicare eccessivamente il codice"]},
+ "Composite":{pro:["Tratta uniformemente oggetti semplici e complessi","Facilita l'aggiunta di nuovi componenti"],con:["Può rendere il design troppo generale","Difficile limitare i tipi di componente"]},
+ "Decorator":{pro:["Aggiunge comportamenti senza sottoclassare","Combina comportamenti a runtime","Rispetta SRP"],con:["Difficile rimuovere decoratori specifici","L'ordine dei decoratori conta"]},
+ "Facade":{pro:["Isola la complessità","Rende il sottosistema facile da usare"],con:["Può diventare un god object","Nasconde funzionalità avanzate"]},
+ "Flyweight":{pro:["Riduce drasticamente l'uso di RAM","Condivide efficacemente stati comuni"],con:["Aumenta la complessità","Può sacrificare CPU per risparmiare memoria"]},
+ "Proxy":{pro:["Controlla l'accesso all'oggetto reale","Gestisce il ciclo di vita","Può lavorare anche se l'oggetto reale non è disponibile"],con:["Può introdurre latenza","Aumenta la complessità"]},
+ "Chain of Responsibility":{pro:["Disaccoppia sender e receiver","Aggiunge handler dinamicamente","Rispetta SRP"],con:["Le richieste possono restare senza risposta","Debug difficile per la catena dinamica"]},
+ "Command":{pro:["Disaccoppia invoker e receiver","Supporta undo/redo, logging, coda","Rispetta Open/Closed"],con:["Aumenta il numero di classi","Può diventare complesso"]},
+ "Iterator":{pro:["Astrae la logica di traversamento","Supporta più iteratori sulla stessa collezione","Rispetta SRP"],con:["Overkill per collezioni semplici","Alcuni linguaggi lo offrono nativamente"]},
+ "Mediator":{pro:["Riduce l'accoppiamento tra componenti","Centralizza il controllo","Facilita l'estensione"],con:["Può diventare un collo di bottiglia","Il mediatore può diventare troppo complesso"]},
+ "Memento":{pro:["Preserva l'incapsulamento","Facilita il rollback dello stato"],con:["Può consumare molta memoria","Difficile gestire memento di oggetti complessi"]},
+ "Observer":{pro:["Disaccoppia soggetto e osservatori","Supporta broadcast di eventi","Facile aggiungere nuovi osservatori"],con:["Notifiche non garantite se un observer fallisce","Problemi di performance con molti observer"]},
+ "State":{pro:["Organizza il codice relativo agli stati","Evita grandi statement condizionali","Rispetta Open/Closed"],con:["Troppe classi per stati semplici","Transizioni di stato complesse"]},
+ "Strategy":{pro:["Rende gli algoritmi intercambiabili","Elimina grandi blocchi condizionali","Rispetta Open/Closed"],con:["Aumenta il numero di classi","Il client deve conoscere le strategie"]},
+ "Template Method":{pro:["Riusa codice comune","Controlla il flusso dell'algoritmo","Rispetta Open/Closed"],con:["Può limitare le sottoclassi","Flusso difficile da comprendere"]},
+ "Visitor":{pro:["Aggiunge operazioni senza modificare le classi","Riunisce operazioni correlate","Rispetta Open/Closed"],con:["Difficile aggiungere nuovi tipi di elemento","Può violare l'incapsulamento"]},
+};
+
+/* =========================================================
+   COPPIE DI PATTERN SIMILI (modalità "Confronta")
+   ========================================================= */
+const PAIRS = [
+ {a:"Adapter", b:"Bridge", diff:"Stessa idea di “collegare”, ma momento opposto: <b>Bridge</b> è progettato a priori per separare astrazione e implementazione e farle evolvere in parallelo; <b>Adapter</b> si aggiunge a posteriori per far collaborare interfacce incompatibili già esistenti."},
+ {a:"Adapter", b:"Decorator", diff:"<b>Adapter</b> <b>cambia</b> l'interfaccia di un oggetto per renderlo compatibile; <b>Decorator</b> <b>mantiene</b> la stessa interfaccia e ne <b>estende</b> il comportamento."},
+ {a:"Decorator", b:"Proxy", diff:"Strutturalmente identici (avvolgono un oggetto con la stessa interfaccia). <b>Decorator</b> aggiunge nuove responsabilità; <b>Proxy</b> controlla l'accesso all'oggetto reale (lazy load, cache, permessi) senza alterarne la logica."},
+ {a:"Proxy", b:"Adapter", diff:"<b>Proxy</b> espone la <b>stessa</b> interfaccia dell'oggetto reale e ne regola l'accesso; <b>Adapter</b> espone un'interfaccia <b>diversa</b> per tradurre quella dell'adattato."},
+ {a:"State", b:"Strategy", diff:"Struttura UML quasi identica (Context + interfaccia + implementazioni). <b>Strategy</b>: algoritmi indipendenti scelti dal client e intercambiabili; <b>State</b>: comportamenti legati a stati che cambiano <b>automaticamente</b>, e gli stati conoscono e gestiscono le transizioni tra loro."},
+ {a:"Strategy", b:"Template Method", diff:"<b>Strategy</b> usa la <b>composizione/delega</b> e sostituisce l'intero algoritmo a runtime; <b>Template Method</b> usa l'<b>ereditarietà</b>, fissa lo scheletro nella superclasse e lascia variare solo alcuni passi (a compile time)."},
+ {a:"Composite", b:"Decorator", diff:"Entrambi ricorsivi e simili nello schema. <b>Composite</b> organizza oggetti in alberi parte-tutto trattati uniformemente; <b>Decorator</b> avvolge <b>un singolo</b> componente per aggiungere responsabilità (un “composite degenere” con un solo figlio)."},
+ {a:"Factory Method", b:"Abstract Factory", diff:"<b>Factory Method</b> è <b>un metodo</b> (spesso ereditato) che crea <b>un</b> prodotto delegando alle sottoclassi; <b>Abstract Factory</b> è <b>un oggetto</b> con più metodi che crea intere <b>famiglie</b> di prodotti correlati (spesso implementato con Factory Method)."},
+ {a:"Mediator", b:"Observer", diff:"<b>Observer</b> distribuisce eventi con sottoscrizione uno-a-molti, mantenendo i partecipanti disaccoppiati; <b>Mediator</b> <b>centralizza</b> la comunicazione molti-a-molti in un unico hub che coordina i peer."},
+ {a:"Mediator", b:"Facade", diff:"<b>Facade</b> offre un'interfaccia semplificata e <b>unidirezionale</b> verso un sottosistema (che non lo conosce); <b>Mediator</b> fa dialogare <b>bidirezionalmente</b> oggetti peer che conoscono e usano il mediatore."},
+ {a:"Command", b:"Strategy", diff:"<b>Strategy</b> incapsula un <b>algoritmo</b> intercambiabile; <b>Command</b> incapsula una <b>richiesta/azione</b> completa (con receiver) per supportare undo, coda e logging."},
+ {a:"Singleton", b:"Flyweight", diff:"<b>Singleton</b> garantisce <b>una sola</b> istanza con accesso globale; <b>Flyweight</b> gestisce <b>molte</b> istanze immutabili condivise per risparmiare memoria."},
+ {a:"Facade", b:"Adapter", diff:"<b>Adapter</b> adatta l'interfaccia di <b>un</b> oggetto esistente; <b>Facade</b> definisce una nuova interfaccia semplice per un <b>intero sottosistema</b> di più oggetti."},
+ {a:"Builder", b:"Abstract Factory", diff:"<b>Abstract Factory</b> restituisce <b>subito</b> famiglie di prodotti correlati; <b>Builder</b> costruisce <b>un singolo</b> oggetto complesso passo dopo passo e lo restituisce solo alla fine."},
+ {a:"Prototype", b:"Factory Method", diff:"<b>Factory Method</b> crea oggetti tramite <b>sottoclassi/ereditarietà</b>; <b>Prototype</b> li crea <b>clonando</b> un'istanza esistente, senza gerarchie di creatori."},
+ {a:"Chain of Responsibility", b:"Decorator", diff:"Catene di wrapper simili. Nella <b>Chain of Responsibility</b> un handler può <b>interrompere</b> la catena gestendo la richiesta; nel <b>Decorator</b> tutti i wrapper eseguono il proprio contributo e nessuno interrompe il flusso."},
+ {a:"Visitor", b:"Command", diff:"<b>Command</b> incapsula <b>una singola richiesta</b> su un receiver; <b>Visitor</b> incapsula <b>operazioni</b> applicate a un'intera gerarchia di elementi eterogenei (double dispatch)."},
+ {a:"Bridge", b:"Strategy", diff:"Struttura simile (delega a un'interfaccia). <b>Strategy</b> è comportamentale: scambia <b>algoritmi</b>; <b>Bridge</b> è strutturale: separa un'<b>astrazione</b> da una gerarchia di <b>implementazioni</b> per farle variare insieme."},
+];
+
+/* =========================================================
+   SCENARI A DUE PATTERN (modalità "Applica ×2")
+   ========================================================= */
+const SCEN2 = [
+ {t:"Un editor di testo deve supportare undo/redo incapsulando ogni azione come oggetto rieseguibile, e deve salvare/ripristinare lo stato del documento ai checkpoint senza violarne l'incapsulamento.", a:["Command","Memento"]},
+ {t:"Un'app di e-commerce espone un'unica facciata 'effettuaOrdine()' che coordina i sottosistemi interni; il pagamento può avvenire con metodi intercambiabili (carta, PayPal, bonifico) scelti a runtime.", a:["Facade","Strategy"]},
+ {t:"Un sistema di notifiche avvisa in broadcast tutti gli iscritti quando cambia lo stato del soggetto, e ogni canale d'invio (email, SMS, push) è un algoritmo intercambiabile.", a:["Observer","Strategy"]},
+ {t:"Un editor grafico organizza le forme in alberi (forme singole e gruppi annidati trattati uniformemente) e permette di aggiungere a runtime bordi e ombre alle singole forme avvolgendole.", a:["Composite","Decorator"]},
+ {t:"Un videogioco renderizza milioni di alberi condividendo la grafica comune per risparmiare memoria, e organizza la scena in una struttura ad albero trattando nodi e foglie allo stesso modo.", a:["Flyweight","Composite"]},
+ {t:"Un'app multipiattaforma crea famiglie di widget UI coerenti per ogni sistema operativo, garantendo però che la factory esista in un'unica istanza globale.", a:["Abstract Factory","Singleton"]},
+ {t:"Un lettore multimediale cambia comportamento secondo lo stato interno (play, pause, stop), e carica il file pesante solo quando serve dietro un sostituto che mostra intanto un segnaposto.", a:["State","Proxy"]},
+ {t:"Un compilatore attraversa i nodi dell'AST con un meccanismo di scorrimento uniforme, e applica nuove operazioni (type-check, ottimizzazione) sui nodi senza modificarne le classi.", a:["Iterator","Visitor"]},
+ {t:"Un'app di logistica delega alle sottoclassi la scelta del mezzo di trasporto da istanziare, e definisce uno scheletro fisso del processo di spedizione lasciando ridefinire solo alcuni passi.", a:["Factory Method","Template Method"]},
+ {t:"Una chat fa passare ogni comunicazione tra utenti da un coordinatore centrale, e notifica automaticamente gli iscritti a un canale quando arriva un nuovo messaggio.", a:["Mediator","Observer"]},
+ {t:"Un generatore di documenti costruisce un report complesso passo dopo passo, e il documento risultante è un albero di elementi (sezioni, paragrafi) trattati in modo uniforme.", a:["Builder","Composite"]},
+ {t:"Un navigatore sceglie a runtime l'algoritmo di calcolo del percorso (auto, bici, mezzi), e incapsula ogni richiesta di ricalcolo come oggetto accodabile e annullabile.", a:["Strategy","Command"]},
+ {t:"Una richiesta web attraversa una catena di filtri (autenticazione, logging, rate-limit) in cui ognuno può gestirla o passarla oltre, e il risultato costoso viene messo in cache da un sostituto con la stessa interfaccia.", a:["Chain of Responsibility","Proxy"]},
+ {t:"Un sistema di disegno clona forme-prototipo già configurate per crearne di nuove, e applica operazioni esterne (calcolo area, esportazione) alla gerarchia di forme senza modificarne le classi.", a:["Prototype","Visitor"]},
+
+ /* ===== SCENARI A DUE PATTERN AGGIUNTIVI (pool ×4) ===== */
+ {t:"Un editor avvisa automaticamente tutte le viste iscritte quando il documento cambia, e incapsula ogni modifica come oggetto rieseguibile per l'undo.", a:["Observer","Command"]},
+ {t:"Un sistema di esportazione sceglie a runtime l'algoritmo di formattazione, e delega alle sottoclassi quale esportatore concreto istanziare.", a:["Strategy","Factory Method"]},
+ {t:"Un servizio HTTP viene avvolto per aggiungere logging e compressione, ed è protetto da un sostituto che ne controlla l'accesso e mette in cache le risposte.", a:["Decorator","Proxy"]},
+ {t:"Un'unica facciata 'avviaSistema()' coordina i sottosistemi interni, ed esiste in una sola istanza globale accessibile ovunque.", a:["Facade","Singleton"]},
+ {t:"Un'app integra librerie di pagamento esterne con interfacce incompatibili tramite involucri, e sceglie a runtime quale metodo usare mantenendo lo stesso flusso.", a:["Adapter","Strategy"]},
+ {t:"Un lettore multimediale cambia comportamento secondo lo stato interno (play, pause, stop), e notifica tutti i componenti UI iscritti a ogni transizione.", a:["State","Observer"]},
+ {t:"Un costruttore assembla passo passo una configurazione complessa, e il gestore della configurazione risultante esiste in un'unica istanza globale.", a:["Builder","Singleton"]},
+ {t:"Un file manager organizza file e cartelle annidate in modo uniforme, e li attraversa con uno scorrimento standard senza esporne la struttura interna.", a:["Composite","Iterator"]},
+ {t:"Un framework di importazione fissa lo scheletro apri→valida→salva, e lascia scegliere a runtime l'algoritmo di validazione tra più strategie.", a:["Template Method","Strategy"]},
+ {t:"Un visualizzatore di mappe condivide la grafica delle migliaia di icone identiche, e carica le tile pesanti solo quando servono dietro un segnaposto.", a:["Flyweight","Proxy"]},
+ {t:"Un'app crea famiglie di widget coerenti per ogni piattaforma, e separa l'astrazione dei controlli dalle implementazioni grafiche native.", a:["Abstract Factory","Bridge"]},
+ {t:"Una richiesta attraversa una catena di handler che possono gestirla o passarla oltre, e ogni operazione viene incapsulata come comando loggabile.", a:["Chain of Responsibility","Command"]},
+ {t:"Un editor di forme organizza figure e gruppi annidati in modo uniforme, e applica operazioni esterne (calcolo area, esportazione) senza modificarne le classi.", a:["Composite","Visitor"]},
+ {t:"Un client accede a un servizio remoto tramite un sostituto che ne regola l'accesso, e adatta l'interfaccia legacy del servizio a quella attesa dal client.", a:["Proxy","Adapter"]},
+ {t:"Un sistema di compressione sceglie a runtime l'algoritmo da usare, e avvolge il flusso per aggiungere cifratura e logging combinabili.", a:["Strategy","Decorator"]},
+ {t:"Un editor delega alle sottoclassi quale oggetto creare, e per gli oggetti costosi li produce clonando un esemplare preconfigurato.", a:["Factory Method","Prototype"]},
+ {t:"Un personaggio cambia comportamento secondo lo stato (fermo, corsa, salto), e in ciascuno seleziona a runtime la strategia di animazione.", a:["State","Strategy"]},
+ {t:"Un sistema di notifiche separa i tipi di messaggio dai canali d'invio, e sceglie a runtime l'algoritmo di priorità tra più strategie.", a:["Bridge","Strategy"]},
+ {t:"Un editor salva snapshot dello stato per l'undo, e notifica tutte le viste iscritte a ogni ripristino.", a:["Memento","Observer"]},
+ {t:"Un'app espone una facciata semplice per un sottosistema complesso, e al suo interno adatta una libreria legacy con interfaccia incompatibile.", a:["Facade","Adapter"]},
+ {t:"Un gioco condivide la grafica di migliaia di alberi identici, ottenuta da un'unica fabbrica globale di oggetti condivisi.", a:["Flyweight","Singleton"]},
+ {t:"Un editor cambia comportamento secondo lo stato (modifica, sola lettura), e incapsula ogni azione come comando annullabile.", a:["State","Command"]},
+ {t:"Una GUI fa coordinare i componenti da un mediatore centrale, e incapsula ogni azione dei pulsanti come comando.", a:["Mediator","Command"]},
+ {t:"Un sistema adatta una libreria con interfaccia incompatibile, e ne avvolge il risultato per aggiungere cache e logging combinabili.", a:["Adapter","Decorator"]},
+ {t:"Un gestore di eventi globale, presente in un'unica istanza, notifica tutti gli iscritti ai cambiamenti di sistema.", a:["Singleton","Observer"]},
+ {t:"Una richiesta passa per una catena di handler che può interromperla, e ogni handler è avvolto per aggiungere metriche senza alterare il flusso.", a:["Chain of Responsibility","Decorator"]},
+ {t:"Un processo di build segue passi fissi (pulisci, compila, testa), e a ogni fase notifica gli strumenti iscritti del completamento.", a:["Template Method","Observer"]},
+ {t:"Un client accede a un servizio remoto tramite un sostituto con cache, e il sostituto è un'unica istanza condivisa globalmente.", a:["Proxy","Singleton"]},
+ {t:"Un'app scorre una collezione con un iteratore uniforme, e applica a runtime una strategia di filtro intercambiabile.", a:["Iterator","Strategy"]},
+ {t:"Un generatore di documenti costruisce passo passo un report, e per le parti ricorrenti clona blocchi preconfigurati.", a:["Builder","Prototype"]},
+ {t:"Un sistema applica operazioni esterne a una gerarchia di nodi senza modificarli, e sceglie a runtime la strategia di calcolo da usare.", a:["Visitor","Strategy"]},
+ {t:"Un'app espone una facciata 'effettuaOrdine()' che coordina i sottosistemi, e notifica gli iscritti a ogni cambio di stato dell'ordine.", a:["Facade","Observer"]},
+ {t:"Un sistema separa i tipi di sensore dai protocolli di trasporto, e notifica gli iscritti a ogni nuova lettura.", a:["Bridge","Observer"]},
+ {t:"Un editor organizza forme e gruppi annidati in modo uniforme, e applica a runtime una strategia di layout intercambiabile.", a:["Composite","Strategy"]},
+ {t:"Un servizio viene avvolto per aggiungere logging e cache, e notifica gli iscritti a ogni risposta ricevuta.", a:["Decorator","Observer"]},
+ {t:"Un'app integra un dispositivo legacy con interfaccia incompatibile, e notifica gli iscritti a ogni dato ricevuto dal dispositivo.", a:["Adapter","Observer"]},
+ {t:"Un editor clona blocchi preconfigurati, e li organizza in una struttura ad albero trattando foglie e gruppi uniformemente.", a:["Prototype","Composite"]},
+ {t:"Un framework definisce uno scheletro fisso di operazioni, e incapsula ogni passo personalizzabile come comando rieseguibile.", a:["Template Method","Command"]},
+ {t:"Un editor cambia comportamento secondo lo stato, e salva snapshot dello stato per ripristinarli senza violarne l'incapsulamento.", a:["State","Memento"]},
+ {t:"Un feed scorre i post con un iteratore uniforme, e notifica gli iscritti quando arrivano nuovi contenuti.", a:["Iterator","Observer"]},
+ {t:"Un'app espone una facciata che semplifica l'avvio, e delega alle sottoclassi quale sottosistema concreto istanziare.", a:["Facade","Factory Method"]},
+ {t:"Un calcolatore di tariffe sceglie a runtime la strategia di prezzo, e accede a un'unica istanza globale del listino condiviso.", a:["Strategy","Singleton"]},
+];
+
+/* =========================================================
+   ENGINE
+   ========================================================= */
+const $ = s => document.querySelector(s);
+let activeCats = new Set(["all"]);
+let mode, pool, queue, idx, score, streak, perCat;
+const QTOTAL = 10;
+const CATLABEL = {creazionali:"Creazionale",strutturali:"Strutturale",comportamentali:"Comportamentale"};
+
+function shuffle(a){a=a.slice();for(let i=a.length-1;i>0;i--){const j=Math.random()*(i+1)|0;[a[i],a[j]]=[a[j],a[i]];}return a;}
+function sample(arr,n,exclude){return shuffle(arr.filter(x=>x!==exclude)).slice(0,n);}
+
+function filteredPatterns(){
+  if(activeCats.has("all")) return P.slice();
+  return P.filter(p=>activeCats.has(p.c));
+}
+
+/* ---- catChips ---- */
+$("#catChips").addEventListener("click", e=>{
+  const chip = e.target.closest(".chip"); if(!chip) return;
+  const cat = chip.dataset.cat;
+  if(cat==="all"){activeCats=new Set(["all"]);}
+  else{
+    activeCats.delete("all");
+    if(activeCats.has(cat))activeCats.delete(cat); else activeCats.add(cat);
+    if(activeCats.size===0)activeCats=new Set(["all"]);
+  }
+  document.querySelectorAll("#catChips .chip").forEach(c=>c.classList.toggle("on",activeCats.has(c.dataset.cat)));
+});
+
+/* ---- mode buttons ---- */
+document.querySelectorAll(".mode").forEach(b=>b.addEventListener("click",()=>start(b.dataset.mode)));
+
+function start(m){
+  mode=m; pool=filteredPatterns();
+  if(pool.length<4){alert("Servono almeno 4 pattern: seleziona più categorie.");return;}
+  idx=0;score=0;streak=0;perCat={creazionali:[0,0],strutturali:[0,0],comportamentali:[0,0]};
+  queue=buildQueue();
+  $("#home").classList.add("hidden");
+  $("#result").classList.add("hidden");
+  $("#quiz").classList.remove("hidden");
+  $("#qtot").textContent=queue.length;
+  render();
+}
+
+/* memoria delle ultime domande viste (anche tra sessioni) per ridurre i doppioni */
+let recent = [];
+try{ recent = JSON.parse(localStorage.getItem("dpt_recent")||"[]"); }catch(e){ recent=[]; }
+function remember(key){
+  recent.push(key);
+  if(recent.length>28) recent = recent.slice(-28);   // ~ 3 sessioni di memoria
+  try{ localStorage.setItem("dpt_recent", JSON.stringify(recent)); }catch(e){}
+}
+const pick = a => a[Math.random()*a.length|0];
+
+/* sceglie un elemento da una lista con cascata di filtri (memoria → sessione) */
+function pickFiltered(all, key, usedKey){
+  let c = all.filter(x=>!usedKey.has(key(x)) && !recent.includes(key(x)));
+  if(!c.length) c = all.filter(x=>!usedKey.has(key(x)));
+  if(!c.length) c = all;
+  return pick(c);
+}
+
+function buildQueue(){
+  const q=[];
+  const order = mode==="mixed"
+    ? Array.from({length:QTOTAL},()=>["recognize","apply","draw"][Math.random()*3|0])
+    : Array(QTOTAL).fill(mode);
+  const usedPat=new Set();    // pattern già usati in QUESTA sessione → mai ripetuti
+  const usedKey=new Set();    // chiave esatta della domanda già usata in sessione
+
+  for(const type of order){
+    if(type==="apply"){
+      const all = SCEN.filter(s=>pool.some(pp=>pp.n===s.a));
+      const key = s => "A|"+s.t;
+      let cand = all.filter(s=>!usedPat.has(s.a) && !usedKey.has(key(s)) && !recent.includes(key(s)));
+      if(!cand.length) cand = all.filter(s=>!usedPat.has(s.a) && !usedKey.has(key(s)));
+      if(!cand.length) cand = all.filter(s=>!usedKey.has(key(s)) && !recent.includes(key(s)));
+      if(!cand.length) cand = all.filter(s=>!usedKey.has(key(s)));
+      if(!cand.length) cand = all;
+      const s = pick(cand);
+      usedPat.add(s.a); usedKey.add(key(s)); remember(key(s));
+      q.push({type, p: P.find(x=>x.n===s.a), prompt:s.t});
+
+    } else if(type==="apply2"){
+      // scenario che richiede DUE pattern (entrambi presenti nel pool, altrimenti tutto SCEN2)
+      let all = SCEN2.filter(s=>s.a.every(n=>pool.some(pp=>pp.n===n)));
+      if(!all.length) all = SCEN2;
+      const key = s => "2|"+s.t;
+      const s = pickFiltered(all, key, usedKey);
+      usedKey.add(key(s)); remember(key(s));
+      q.push({type, p: P.find(x=>x.n===s.a[0]), prompt:s.t, answers:s.a});
+
+    } else if(type==="compare"){
+      // coppia di pattern simili (entrambi nel pool, altrimenti tutte le coppie)
+      let all = PAIRS.filter(pr=>pool.some(p=>p.n===pr.a) && pool.some(p=>p.n===pr.b));
+      if(!all.length) all = PAIRS;
+      const key = pr => "C|"+pr.a+"/"+pr.b;
+      const pr = pickFiltered(all, key, usedKey);
+      usedKey.add(key(pr)); remember(key(pr));
+      q.push({type, p: P.find(x=>x.n===pr.a), pair:pr});
+
+    } else {
+      // recognize / draw / explain: pattern nuovo in sessione, possibilmente non recente
+      const variant = Math.random()*3|0;
+      const key = p => type[0].toUpperCase()+"|"+p.n;   // R| D| E|
+      let cand = pool.filter(p=>!usedPat.has(p.n) && !recent.includes(key(p)));
+      if(!cand.length) cand = pool.filter(p=>!usedPat.has(p.n));
+      if(!cand.length) cand = pool;
+      const p = pick(cand);
+      usedPat.add(p.n); remember(key(p));
+      // quadruplica le formulazioni: pesca problema ed esempio dal pool esteso
+      const qprob = pick([p.prob, ...(p.probA||[])]);
+      const qex   = pick([p.ex,   ...(p.exA||[])]);
+      q.push({type, p, variant, qprob, qex});
+    }
+  }
+  return q;
+}
+
+function render(){
+  const q=queue[idx];
+  $("#qnum").textContent=idx+1;
+  $("#score").textContent=score;
+  $("#streak").textContent=streak;
+  $("#streakPill").style.opacity = streak>1?1:.4;
+  $("#pbar").style.width = (idx/queue.length*100)+"%";
+  if(q.type==="draw") renderDraw(q);
+  else if(q.type==="explain") renderExplain(q);
+  else if(q.type==="compare") renderCompare(q);
+  else if(q.type==="apply2") renderMulti(q);
+  else renderChoice(q);
+}
+
+/* ----- domande a scelta multipla (riconosci + applica) ----- */
+function renderChoice(q){
+  const p=q.p;
+  const isApply = q.type==="apply";
+  // distrattori: preferisci stessa categoria
+  const sameCat = pool.filter(x=>x.c===p.c && x.n!==p.n);
+  let distract = sample(sameCat,3,p);
+  if(distract.length<3) distract = distract.concat(sample(pool.filter(x=>x.n!==p.n&&!distract.includes(x)),3-distract.length,p));
+  const opts = shuffle([p,...distract]);
+  const tag = isApply ? "🎯 Applica · scegli il pattern adatto" : "🔍 Riconosci · di che pattern si parla?";
+  const probTxt = q.qprob||p.prob, exTxt = q.qex||p.ex;
+  let body;
+  if(isApply){
+    body = `<p class="qtext">${q.prompt}</p>`;
+  } else if(q.variant===1){
+    // solo l'esempio (più difficile: niente definizione del problema)
+    body = `<p class="qtext">Quale pattern useresti tipicamente in questa situazione?</p><p class="qctx"><em>${exTxt}</em></p>`;
+  } else if(q.variant===2){
+    // solo il problema astratto
+    body = `<p class="qtext">${probTxt}</p>`;
+  } else {
+    // problema + esempio
+    body = `<p class="qtext">${probTxt}</p><p class="qctx">Esempio: <em>${exTxt}</em></p>`;
+  }
+
+  $("#qcard").innerHTML = `
+    <span class="qtag">${tag}</span>
+    ${body}
+    <div class="answers" id="answers"></div>
+    <div class="feedback" id="fb"></div>
+    <div class="row" id="navrow"></div>`;
+
+  const ansBox=$("#answers");
+  const keys=["A","B","C","D"];
+  opts.forEach((o,i)=>{
+    const el=document.createElement("button");
+    el.className="answer";
+    el.innerHTML=`<span class="k">${keys[i]}</span><span>${o.n}</span>`;
+    el.onclick=()=>choose(el,o,p);
+    ansBox.appendChild(el);
+  });
+}
+
+function choose(el,chosen,correct){
+  document.querySelectorAll(".answer").forEach(a=>{a.classList.add("locked");a.onclick=null;});
+  const ok = chosen.n===correct.n;
+  registerResult(correct,ok);
+  document.querySelectorAll(".answer").forEach(a=>{
+    const name=a.querySelector("span:last-child").textContent;
+    if(name===correct.n)a.classList.add("correct");
+    else if(a===el)a.classList.add("wrong");
+  });
+  const fb=$("#fb");
+  fb.className="feedback show "+(ok?"ok":"no");
+  fb.innerHTML=`<h4>${ok?"✅ Esatto!":"❌ Era "+correct.n}</h4>
+    <div><b>${correct.n}</b> (${CATLABEL[correct.c]}) — ${correct.prob}</div>
+    <div class="rel">🔗 ${correct.rel}</div>`;
+  showNext();
+}
+
+/* ----- modalità Disegna (flashcard UML) ----- */
+function renderDraw(q){
+  const p=q.p;
+  const probTxt = q.qprob||p.prob, exTxt = q.qex||p.ex;
+  let prompt, hint;
+  if(q.variant===1){
+    // dato solo il problema: prima riconosci il pattern, poi disegnalo
+    prompt = `<p class="qtext">Riconosci il pattern e disegnane la struttura</p>
+              <p class="qctx">${probTxt}</p>`;
+    hint = "Prima individua di QUALE pattern si tratta, poi disegnane lo schema UML.";
+  } else if(q.variant===2){
+    // dato solo l'esempio
+    prompt = `<p class="qtext">Riconosci il pattern e disegnane la struttura</p>
+              <p class="qctx">Esempio: <em>${exTxt}</em></p>`;
+    hint = "Prima individua di QUALE pattern si tratta, poi disegnane lo schema UML.";
+  } else {
+    // dato il nome: disegna direttamente la struttura
+    prompt = `<p class="qtext">${p.n} <span style="font-weight:400;color:var(--muted);font-size:.85rem">· ${CATLABEL[p.c]}</span></p>
+              <p class="qctx">${probTxt}<br>Esempio: <em>${exTxt}</em></p>`;
+    hint = "Disegna su carta le classi, i metodi e le relazioni di questo pattern.";
+  }
+  $("#qcard").innerHTML=`
+    <span class="qtag">✏️ Disegna · ricostruisci la struttura UML</span>
+    ${prompt}
+    <p style="color:var(--muted);font-size:.88rem">👉 ${hint} Poi rivela la soluzione e confronta.</p>
+    <div class="row"><button class="btn primary" id="revealBtn">👁 Mostra soluzione</button></div>
+    <div id="solution" class="hidden"></div>`;
+  $("#revealBtn").onclick=()=>revealUML(p);
+}
+
+function umlHTML(p){
+  const cards = p.uml.map(c=>{
+    const mems = c.mem.length? c.mem.map(m=>`<div>${m}</div>`).join("") : '<div style="color:var(--muted)">—</div>';
+    return `<div class="uml"><div class="name">${c.st?`<small>«${c.st}»</small>`:""}${c.nm}</div><div class="mem">${mems}</div></div>`;
+  }).join("");
+  return `<div class="umlbox"><div class="umlgrid">${cards}</div>
+    <div class="rels">🔗 <b>Relazioni:</b> ${p.rel}</div></div>`;
+}
+
+function revealUML(p){
+  const sol=$("#solution");
+  sol.classList.remove("hidden");
+  sol.innerHTML = `<p class="qtext" style="margin-top:18px">➡️ ${p.n} <span style="font-weight:400;color:var(--muted);font-size:.85rem">· ${CATLABEL[p.c]}</span></p>`
+    + umlHTML(p) + `
+    <p class="center" style="margin-top:16px;color:var(--muted)">Come è andata la tua versione?</p>
+    <div class="selfrate">
+      <button class="btn" data-r="0">😕 Da rivedere</button>
+      <button class="btn" data-r="1">🙂 Quasi</button>
+      <button class="btn primary" data-r="2">💪 Perfetta</button>
+    </div>`;
+  $("#revealBtn").disabled=true;
+  sol.querySelectorAll("[data-r]").forEach(b=>b.onclick=()=>{
+    const r=+b.dataset.r;
+    registerResult(p, r===2, r);     // punteggio parziale per autovalutazione
+    sol.querySelectorAll("[data-r]").forEach(x=>{x.disabled=true;x.style.opacity=.5;});
+    b.style.opacity=1;b.classList.add("primary");
+    showNext();
+  });
+}
+
+/* blocco di autovalutazione riutilizzabile (Disegna / Spiega / Confronta) */
+function selfRateHTML(question){
+  return `<p class="center" style="margin-top:18px;color:var(--muted)">${question||"Come è andata la tua versione?"}</p>
+    <div class="selfrate">
+      <button class="btn" data-r="0">😕 Da rivedere</button>
+      <button class="btn" data-r="1">🙂 Quasi</button>
+      <button class="btn primary" data-r="2">💪 Perfetta</button>
+    </div>`;
+}
+function wireSelfRate(container, refPattern){
+  container.querySelectorAll("[data-r]").forEach(b=>b.onclick=()=>{
+    registerResult(refPattern, +b.dataset.r===2, +b.dataset.r);
+    container.querySelectorAll("[data-r]").forEach(x=>{x.disabled=true;x.style.opacity=.5;});
+    b.style.opacity=1; b.classList.add("primary");
+    showNext();
+  });
+}
+/* descrizione testuale dei partecipanti dal modello UML */
+function rolesHTML(p){
+  return p.uml.map(c=>`<li><b>${c.nm}</b>${c.st?` «${c.st}»`:""}${c.mem.length?` — <span style="color:var(--muted)">${c.mem.join(" · ")}</span>`:""}</li>`).join("");
+}
+
+/* ----- modalità SPIEGA (flashcard completa) ----- */
+function renderExplain(q){
+  const p=q.p;
+  const probTxt = q.qprob||p.prob, exTxt = q.qex||p.ex;
+  let head;
+  if(q.variant===0){
+    head = `<p class="qtext">${p.n}</p>`;
+  } else if(q.variant===1){
+    head = `<p class="qtext">Riconosci il pattern e spiegalo a fondo</p><p class="qctx">${probTxt}</p>`;
+  } else {
+    head = `<p class="qtext">Riconosci il pattern e spiegalo a fondo</p><p class="qctx">Esempio: <em>${exTxt}</em></p>`;
+  }
+  $("#qcard").innerHTML=`
+    <span class="qtag">🗣️ Spiega · esponi tutto il pattern</span>
+    ${head}
+    <p style="color:var(--muted);font-size:.88rem">👉 Spiega a voce (o per iscritto) coprendo:</p>
+    <ul class="checklist">
+      <li>A che problema risponde e un esempio d'uso</li>
+      <li>Disegna la struttura UML (classi + relazioni)</li>
+      <li>Ruolo di ogni classe e dei metodi principali</li>
+      <li>Vantaggi, svantaggi e pattern correlati</li>
+    </ul>
+    <div class="row"><button class="btn primary" id="revealBtn">👁 Mostra soluzione</button></div>
+    <div id="solution" class="hidden"></div>`;
+  $("#revealBtn").onclick=()=>{
+    const e=EXTRA[p.n]||{pro:[],con:[]};
+    const sol=$("#solution"); sol.classList.remove("hidden");
+    sol.innerHTML=`
+      <p class="qtext" style="margin-top:18px">➡️ ${p.n} <span class="cmpcat">· ${CATLABEL[p.c]}</span></p>
+      <p class="qctx"><b>Problema:</b> ${probTxt}<br><b>Esempio:</b> <em>${exTxt}</em></p>
+      <div class="umltitle">Struttura UML</div>${umlHTML(p)}
+      <div class="umltitle">Classi e metodi</div><ul class="checklist" style="margin-top:0">${rolesHTML(p)}</ul>
+      <div class="prosbox">
+        <div class="pro"><h5>✔ Vantaggi</h5><ul>${e.pro.map(x=>`<li>${x}</li>`).join("")}</ul></div>
+        <div class="con"><h5>✘ Svantaggi</h5><ul>${e.con.map(x=>`<li>${x}</li>`).join("")}</ul></div>
+      </div>
+      ${selfRateHTML("Quanto è stata completa la tua spiegazione?")}`;
+    $("#revealBtn").disabled=true;
+    wireSelfRate(sol, p);
+  };
+}
+
+/* ----- modalità CONFRONTA (due pattern simili) ----- */
+function renderCompare(q){
+  const pr=q.pair;
+  const A=P.find(x=>x.n===pr.a), B=P.find(x=>x.n===pr.b);
+  $("#qcard").innerHTML=`
+    <span class="qtag">⚖️ Confronta · trova le differenze</span>
+    <div class="pairhead">${A.n} <span class="vs">VS</span> ${B.n}</div>
+    <p class="qctx"><span class="cmpcat">${CATLABEL[A.c]}</span> &nbsp;·&nbsp; <span class="cmpcat">${CATLABEL[B.c]}</span></p>
+    <p style="color:var(--muted);font-size:.88rem">👉 Spiega le <b>differenze chiave</b> tra i due pattern e <b>disegna entrambe</b> le strutture. Poi confronta.</p>
+    <div class="row"><button class="btn primary" id="revealBtn">👁 Mostra soluzione</button></div>
+    <div id="solution" class="hidden"></div>`;
+  $("#revealBtn").onclick=()=>{
+    const sol=$("#solution"); sol.classList.remove("hidden");
+    sol.innerHTML=`
+      <div class="diffbox">⚖️ <b>Differenze:</b> ${pr.diff}</div>
+      <div class="umltitle">${A.n}</div>${umlHTML(A)}
+      <div class="umltitle">${B.n}</div>${umlHTML(B)}
+      ${selfRateHTML("Hai colto le differenze e disegnato entrambi?")}`;
+    $("#revealBtn").disabled=true;
+    wireSelfRate(sol, A);
+  };
+}
+
+/* ----- modalità APPLICA ×2 (due pattern in uno scenario) ----- */
+function renderMulti(q){
+  const correct = q.answers;                 // array di 2 nomi
+  const correctP = correct.map(n=>P.find(x=>x.n===n));
+  // distrattori: preferisci stesse categorie dei corretti
+  const cats = new Set(correctP.map(p=>p.c));
+  let dpool = P.filter(p=>!correct.includes(p.n) && cats.has(p.c));
+  let distract = sample(dpool,4);
+  if(distract.length<4) distract = distract.concat(sample(P.filter(p=>!correct.includes(p.n)&&!distract.includes(p)),4-distract.length));
+  const opts = shuffle([...correctP,...distract]);
+  const sel = new Set();
+
+  $("#qcard").innerHTML=`
+    <span class="qtag">🎯🎯 Applica ×2 · servono DUE pattern</span>
+    <p class="qtext">${q.prompt}</p>
+    <p class="selcount">Seleziona <b>esattamente 2</b> pattern. <span id="cnt">0/2</span></p>
+    <div class="answers" id="answers"></div>
+    <div class="row"><button class="btn primary" id="confirmBtn" disabled>Conferma</button></div>
+    <div class="feedback" id="fb"></div>
+    <div class="row" id="navrow"></div>`;
+
+  const box=$("#answers"), keys=["A","B","C","D","E","F"];
+  opts.forEach((o,i)=>{
+    const el=document.createElement("button");
+    el.className="answer"; el.dataset.n=o.n;
+    el.innerHTML=`<span class="k">${keys[i]}</span><span>${o.n}</span><span class="check">✔</span>`;
+    el.onclick=()=>{
+      if(sel.has(o.n)){ sel.delete(o.n); el.classList.remove("sel"); }
+      else { if(sel.size>=2) return; sel.add(o.n); el.classList.add("sel"); }
+      $("#cnt").textContent=sel.size+"/2";
+      $("#confirmBtn").disabled = sel.size!==2;
+    };
+    box.appendChild(el);
+  });
+
+  $("#confirmBtn").onclick=()=>{
+    document.querySelectorAll(".answer").forEach(a=>{a.classList.add("locked");a.onclick=null;});
+    $("#confirmBtn").disabled=true; $("#confirmBtn").style.display="none";
+    const hits = [...sel].filter(n=>correct.includes(n)).length;   // 0,1,2
+    document.querySelectorAll(".answer").forEach(a=>{
+      const n=a.dataset.n;
+      if(correct.includes(n)) a.classList.add("correct");
+      else if(sel.has(n)) a.classList.add("wrong");
+    });
+    registerResult(correctP[0], hits===2, hits);   // 2=pieno, 1=parziale, 0=nullo
+    const fb=$("#fb"); fb.className="feedback show "+(hits===2?"ok":"no");
+    fb.innerHTML=`<h4>${hits===2?"✅ Entrambi giusti!":hits===1?"➗ Solo uno corretto":"❌ Nessuno dei due"}</h4>
+      <div>I pattern richiesti erano <b>${correct[0]}</b> e <b>${correct[1]}</b>.</div>
+      <div class="rel">🔗 ${correctP[0].n}: ${correctP[0].rel}</div>`;
+    showNext();
+  };
+}
+
+function registerResult(p, ok, partial){
+  perCat[p.c][1]++;
+  let pts=0;
+  if(typeof partial==="number"){ pts = partial; perCat[p.c][0]+= partial/2; } // draw: 0/1/2 → max 2
+  else { pts = ok?2:0; if(ok)perCat[p.c][0]++; }
+  if(ok){ streak++; pts += Math.min(streak-1,3); } else streak=0; // bonus serie
+  score += pts;
+  $("#score").textContent=score;
+  $("#streak").textContent=streak;
+}
+
+function showNext(){
+  let row=$("#navrow");
+  if(!row){ row=document.createElement("div"); row.className="row"; $("#qcard").appendChild(row); }
+  row.innerHTML = `<button class="btn primary" id="nextBtn">${idx+1<queue.length?"Avanti →":"Vedi risultati 🏁"}</button>`;
+  $("#nextBtn").onclick=()=>{ idx++; if(idx<queue.length){$("#pbar").style.width=(idx/queue.length*100)+"%";render();} else finish(); };
+}
+
+/* ----- risultati ----- */
+function finish(){
+  $("#quiz").classList.add("hidden");
+  $("#result").classList.remove("hidden");
+  const maxScore = queue.length*2;
+  const pct = Math.round(score/ (maxScore + 0.0001) *100);
+  $("#finalScore").textContent=score+" pt";
+  let g = pct>=85?"🏆 Maestro dei pattern!":pct>=65?"🎓 Ottimo, ci sei quasi.":pct>=40?"📚 Buona base, continua ad allenarti.":"🌱 Si parte da qui: ripassa e riprova!";
+  $("#grade").textContent=g + `  (${pct}% del massimo)`;
+  const bars=$("#bars"); bars.innerHTML="";
+  for(const c of ["creazionali","strutturali","comportamentali"]){
+    const [ok,tot]=perCat[c];
+    if(tot===0)continue;
+    const p=Math.round(ok/tot*100);
+    bars.innerHTML+=`<div class="barrow"><div class="lbl"><span>${CATLABEL[c]}</span><span>${Math.round(ok)}/${tot}</span></div><div class="bar"><i style="width:${p}%"></i></div></div>`;
+  }
+}
+
+$("#quitBtn").onclick=()=>{ if(confirm("Uscire dalla sessione?")){goHome();} };
+$("#homeBtn").onclick=goHome;
+$("#againBtn").onclick=()=>start(mode);
+function goHome(){ $("#quiz").classList.add("hidden"); $("#result").classList.add("hidden"); $("#home").classList.remove("hidden"); }
+</script>
+<script>
+// Registra il service worker: abilita l'uso offline dopo la prima apertura
+if ("serviceWorker" in navigator) {
+  window.addEventListener("load", () => {
+    navigator.serviceWorker.register("sw.js").catch(() => {});
+  });
+}
+</script>
+</body>
+</html>
