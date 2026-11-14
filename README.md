@@ -44,4 +44,4 @@ Contenuti basati su Design Patterns: Elements of Reusable Object-Oriented Softwa
 
 Autore
 
-Alessandro Mozzoni · LinkedIn
+Alessandro Mozzoni
