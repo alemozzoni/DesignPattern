@@ -27,7 +27,6 @@ di Camerino. Leggere la teoria non bastava: volevo uno strumento che mi obbligas
 - **HTML, CSS e JavaScript** puri, senza framework né dipendenze esterne
 - **Progressive Web App (PWA)**: si installa su smartphone e desktop come un'app
 - **Service worker** con cache: dopo la prima apertura funziona anche **offline**
-- **localStorage** per memorizzare le domande recenti
 - Pubblicata con **GitHub Pages**
 
 ## Eseguirlo in locale
